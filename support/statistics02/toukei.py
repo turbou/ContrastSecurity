@@ -85,6 +85,9 @@ def main():
         print()
         return
 
+    if not (args.app or args.vul or args.lib):
+        args.app = args.vul = args.lib = True
+
     base_dir = os.path.dirname(__file__)
     now = dt.now()
     timestamp_full = now.strftime("%Y%m%d%H%M")
@@ -198,11 +201,49 @@ def main():
         with open(json_path, "w") as f:
            json.dump(all_orgtraces, f, indent=4)
 
+        for app in all_applications:
+            csv_lines = []
+            for trace in all_orgtraces:
+                if trace['application']['id'] == app['app_id']:
+                    csv_line = []
+                    csv_line.append(app['name'])
+                    csv_line.append(trace['severity'])
+                    csv_line.append(trace['ruleName'])
+                    csv_line.append(trace['status'])
+                    csv_line.append('')
+                    note_buffer = []
+                    note_creators = []
+                    if 'notes' in trace:
+                        for note in trace["notes"]:
+                            status_before = None
+                            status_after = None
+                            if 'properties' in note:
+                                for prop in note['properties']:
+                                    if prop['name'] == 'status.change.previous.status':
+                                        status_before = prop['value']
+                                    if prop['name'] == 'status.change.status':
+                                        status_after = prop['value']
+                            status_chg_str = ''
+                            if status_before and status_after:
+                                status_chg_str = '(%s -> %s)' % (status_before, status_after)
+                            note_buffer.append('%s%s' % (html.unescape(note['note']), status_chg_str))
+                            note_creators.append(note['creator'] if note['creator'] else '')
+                    csv_line.append(', '.join(note_buffer))
+                    csv_line.append(', '.join(note_creators))
+                    csv_lines.append(csv_line)
+
+            if len(csv_lines) > 0:
+                csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                with open(csv_path, 'w', encoding='shift_jis') as f:
+                   writer = csv.writer(f, lineterminator='\n')
+                   writer.writerow(CSV_HEADER_VUL)
+                   writer.writerows(csv_lines)
+
     # =============== 組織全体のライブラリ一覧を取得 ===============
     if args.lib:
         print('Libraries Loading...')
         all_libraries = []
-        url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
+        url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
         payload = '{"q":"","quickFilter":"ALL","apps":[],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}'
         r = requests.post(url_libraries, headers=headers, data=payload)
         data = r.json()
@@ -217,7 +258,7 @@ def main():
         orgLibrariesIncompleteFlg = True
         orgLibrariesIncompleteFlg = totalCnt > len(all_libraries)
         while orgLibrariesIncompleteFlg:
-            url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
+            url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
             r = requests.post(url_libraries, headers=headers, data=payload)
             data = r.json()
             for lib in data['libraries']:
@@ -243,13 +284,20 @@ def main():
                     csv_line.append(app['name'])
                     csv_line.append(lib['grade'])
                     csv_line.append(lib['file_name'])
+                    cves = [vuln["name"] for vuln in lib["vulns"]]
+                    csv_line.append(', '.join(cves))
+                    csv_line.append('')
+                    csv_line.append(lib['file_version'])
+                    csv_line.append(lib['latest_version'])
+                    csv_line.append('')
                     csv_lines.append(csv_line)
-                        
-            csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
-            with open(csv_path, 'w', encoding='shift_jis') as f:
-               writer = csv.writer(f, lineterminator='\n')
-               writer.writerow(CSV_HEADER_LIB)
-               writer.writerows(csv_lines)
+
+            if len(csv_lines) > 0:
+                csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                with open(csv_path, 'w', encoding='shift_jis') as f:
+                   writer = csv.writer(f, lineterminator='\n')
+                   writer.writerow(CSV_HEADER_LIB)
+                   writer.writerows(csv_lines)
 
 
 if __name__ == '__main__':
