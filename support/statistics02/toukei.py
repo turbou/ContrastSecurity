@@ -172,11 +172,22 @@ def main():
         print(totalCnt)
         for vuln in data['items']:
             print(vuln['vulnerability']['uuid'])
+            # Activity
             url_notes = '%s/%s/applications/%s/traces/%s/notes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
             r = requests.get(url_notes, headers=headers)
             data = r.json()
             if data['success']:
                 vuln['vulnerability']['notes'] = data['notes']
+            else:
+                vuln['vulnerability']['notes'] = []
+            # Route
+            url_routes = '%s/%s/traces/%s/trace/%s/routes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
+            r = requests.get(url_routes, headers=headers)
+            data = r.json()
+            if data['success']:
+                vuln['vulnerability']['routes'] = data['routes']
+            else:
+                vuln['vulnerability']['routes'] = []
             all_orgtraces.append(vuln['vulnerability'])
     
         orgTracesIncompleteFlg = True
@@ -187,11 +198,22 @@ def main():
             data = r.json()
             for vuln in data['items']:
                 print(vuln['vulnerability']['uuid'])
+                # Activity
                 url_notes = '%s/%s/applications/%s/traces/%s/notes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
                 r = requests.get(url_notes, headers=headers)
                 data = r.json()
                 if data['success']:
                     vuln['vulnerability']['notes'] = data['notes']
+                else:
+                    vuln['vulnerability']['notes'] = []
+                # Route
+                url_routes = '%s/%s/traces/%s/trace/%s/routes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
+                r = requests.get(url_routes, headers=headers)
+                data = r.json()
+                if data['success']:
+                    vuln['vulnerability']['routes'] = data['routes']
+                else:
+                    vuln['vulnerability']['routes'] = []
                 all_orgtraces.append(vuln['vulnerability'])
                 orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
         print('Total(OrgTraces): ', len(all_orgtraces))
@@ -210,24 +232,24 @@ def main():
                     csv_line.append(trace['severity'])
                     csv_line.append(trace['ruleName'])
                     csv_line.append(trace['status'])
-                    csv_line.append('')
+                    route_urls = ['%s(%s)' % (observation['url'], observation['verb']) for route in trace['routes'] for observation in route['observations']]
+                    csv_line.append(', '.join(route_urls))
                     note_buffer = []
                     note_creators = []
-                    if 'notes' in trace:
-                        for note in trace["notes"]:
-                            status_before = None
-                            status_after = None
-                            if 'properties' in note:
-                                for prop in note['properties']:
-                                    if prop['name'] == 'status.change.previous.status':
-                                        status_before = prop['value']
-                                    if prop['name'] == 'status.change.status':
-                                        status_after = prop['value']
-                            status_chg_str = ''
-                            if status_before and status_after:
-                                status_chg_str = '(%s -> %s)' % (status_before, status_after)
-                            note_buffer.append('%s%s' % (html.unescape(note['note']), status_chg_str))
-                            note_creators.append(note['creator'] if note['creator'] else '')
+                    for note in trace["notes"]:
+                        status_before = None
+                        status_after = None
+                        if 'properties' in note:
+                            for prop in note['properties']:
+                                if prop['name'] == 'status.change.previous.status':
+                                    status_before = prop['value']
+                                if prop['name'] == 'status.change.status':
+                                    status_after = prop['value']
+                        status_chg_str = ''
+                        if status_before and status_after:
+                            status_chg_str = '(%s -> %s)' % (status_before, status_after)
+                        note_buffer.append('%s%s' % (html.unescape(note['note']), status_chg_str))
+                        note_creators.append(note['creator'] if note['creator'] else '')
                     csv_line.append(', '.join(note_buffer))
                     csv_line.append(', '.join(note_creators))
                     csv_lines.append(csv_line)
