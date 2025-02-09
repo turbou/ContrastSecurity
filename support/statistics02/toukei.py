@@ -159,7 +159,7 @@ def main():
             with open(json_path, "w") as f:
                json.dump(all_applications, f, indent=4)
 
-        csv_lines = []
+        csv_lines_sum = []
         for app in all_applications:
             csv_line = []
             csv_line.append(app['name'])
@@ -168,14 +168,14 @@ def main():
             csv_line.append(app['scores']['platform']['grade'])
             coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
             csv_line.append('%d%%' % coverage)
-            csv_lines.append(csv_line)
+            csv_lines_sum.append(csv_line)
 
         try:
             csv_path = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
             with open(csv_path, 'w', encoding='shift_jis') as f:
                writer = csv.writer(f, lineterminator='\n')
                writer.writerow(CSV_HEADER_SUMMARY)
-               writer.writerows(csv_lines)
+               writer.writerows(csv_lines_sum)
         except PermissionError:
             print('%sを書き込みモードで開くことができません。' % csv_path)
             sys.exit(1)
@@ -256,7 +256,7 @@ def main():
                json.dump(all_orgtraces, f, indent=4)
 
         for app in all_applications:
-            csv_lines = []
+            csv_lines_vul = []
             for trace in all_orgtraces:
                 if trace['application']['id'] == app['app_id']:
                     csv_line = []
@@ -284,15 +284,15 @@ def main():
                         note_creators.append(note['creator'] if note['creator'] else '')
                     csv_line.append(', '.join(note_buffer))
                     csv_line.append(', '.join(note_creators))
-                    csv_lines.append(csv_line)
+                    csv_lines_vul.append(csv_line)
 
-            if len(csv_lines) > 0:
+            if len(csv_lines_vul) > 0:
                 try:
                     csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                     with open(csv_path, 'w', encoding='shift_jis') as f:
                        writer = csv.writer(f, lineterminator='\n')
                        writer.writerow(CSV_HEADER_VUL)
-                       writer.writerows(csv_lines)
+                       writer.writerows(csv_lines_vul)
                 except PermissionError:
                     print('%sを書き込みモードで開くことができません。' % csv_path)
                     sys.exit(1)
@@ -343,7 +343,7 @@ def main():
                json.dump(all_libraries, f, indent=4)
 
         for app in all_applications:
-            csv_lines = []
+            csv_lines_lib = []
             for lib in all_libraries:
                 exist_flg = False
                 for lib_app in lib['apps']:
@@ -360,15 +360,15 @@ def main():
                     csv_line.append(lib['file_version'])
                     csv_line.append(lib['latest_version'])
                     csv_line.append('')
-                    csv_lines.append(csv_line)
+                    csv_lines_lib.append(csv_line)
 
-            if len(csv_lines) > 0:
+            if len(csv_lines_lib) > 0:
                 try:
                     csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                     with open(csv_path, 'w', encoding='shift_jis') as f:
                        writer = csv.writer(f, lineterminator='\n')
                        writer.writerow(CSV_HEADER_LIB)
-                       writer.writerows(csv_lines)
+                       writer.writerows(csv_lines_lib)
                 except PermissionError:
                     print('%sを書き込みモードで開くことができません。' % csv_path)
                     sys.exit(1)
