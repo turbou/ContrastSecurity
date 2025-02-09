@@ -4,6 +4,7 @@ from datetime import datetime as dt
 import html
 import json
 import os
+import sys
 
 import requests
 
@@ -72,6 +73,7 @@ def main():
     parser.add_argument('--vul_open', action='store_true', help='OPENな脆弱性の情報のみ取得')
     parser.add_argument('--lib_vuln', action='store_true', help='脆弱性を含むライブラリの情報のみ取得')
     parser.add_argument('--no_json', action='store_true', help='JSONファイルの出力を抑制')
+    parser.add_argument('--app_filter', help='アプリケーション名フィルタ(例: PetClinic(デバッグ用))')
     args = parser.parse_args()
 
     env_not_found = False
@@ -119,12 +121,18 @@ def main():
     headers = {"Accept": "application/json", "content-type": "application/json", "API-Key": API_KEY, "Authorization": AUTHORIZATION}
     API_URL = "%s/api/ng" % (BASEURL)
 
+    specify_application_ids = []
+
     # =============== 組織全体のアプリケーション一覧を取得 ===============
     all_applications = []
     if args.app:
         print('Applications Loading...')
-        url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,kip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
+        url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,kip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
         payload = '{"quickFilter":"ALL","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[]}'
+        if args.app_filter:
+            payload = '{"quickFilter":"ALL","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[], "filterText":"%s"}' % (
+                args.app_filter
+                )
         r = requests.post(url_applications, headers=headers, data=payload)
         data = r.json()
         totalCnt = data['count']
@@ -136,7 +144,7 @@ def main():
         orgApplicationsIncompleteFlg = True
         orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
         while orgApplicationsIncompleteFlg:
-            url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,skip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
+            url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
             r = requests.post(url_applications, headers=headers, data=payload)
             data = r.json()
             for app in data['applications']:
@@ -156,13 +164,21 @@ def main():
             csv_line = []
             csv_line.append(app['name'])
             csv_line.append(app['scores']['letter_grade'])
+            csv_line.append(app['scores']['security']['grade'])
+            csv_line.append(app['scores']['platform']['grade'])
+            coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
+            csv_line.append('%d%%' % coverage)
             csv_lines.append(csv_line)
 
-        csv_path = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
-        with open(csv_path, 'w', encoding='shift_jis') as f:
-           writer = csv.writer(f, lineterminator='\n')
-           writer.writerow(CSV_HEADER_SUMMARY)
-           writer.writerows(csv_lines)
+        try:
+            csv_path = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
+            with open(csv_path, 'w', encoding='shift_jis') as f:
+               writer = csv.writer(f, lineterminator='\n')
+               writer.writerow(CSV_HEADER_SUMMARY)
+               writer.writerows(csv_lines)
+        except PermissionError:
+            print('%sを書き込みモードで開くことができません。' % csv_path)
+            sys.exit(1)
 
     # =============== 組織全体の脆弱性一覧を取得 ===============
     if args.vul:
@@ -172,6 +188,15 @@ def main():
         payload = '{"quickFilter":"%s","modules":[],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}' % (
             'OPEN' if args.vul_open else 'ALL'
             )
+        if args.app_filter:
+            modules = []
+            for app in all_applications:
+                module_id = f'"{app["app_id"]}"'
+                modules.append(module_id)
+            payload = '{"quickFilter":"%s","modules":[%s],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}' % (
+                'OPEN' if args.vul_open else 'ALL',
+                ','.join(modules)
+                )
         r = requests.post(url_orgtraces, headers=headers, data=payload)
         data = r.json()
         totalCnt = data['count']
@@ -262,11 +287,15 @@ def main():
                     csv_lines.append(csv_line)
 
             if len(csv_lines) > 0:
-                csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
-                with open(csv_path, 'w', encoding='shift_jis') as f:
-                   writer = csv.writer(f, lineterminator='\n')
-                   writer.writerow(CSV_HEADER_VUL)
-                   writer.writerows(csv_lines)
+                try:
+                    csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                    with open(csv_path, 'w', encoding='shift_jis') as f:
+                       writer = csv.writer(f, lineterminator='\n')
+                       writer.writerow(CSV_HEADER_VUL)
+                       writer.writerows(csv_lines)
+                except PermissionError:
+                    print('%sを書き込みモードで開くことができません。' % csv_path)
+                    sys.exit(1)
 
     # =============== 組織全体のライブラリ一覧を取得 ===============
     if args.lib:
@@ -276,6 +305,15 @@ def main():
         payload = '{"q":"","quickFilter":"%s","apps":[],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}' % (
             'VULNERABLE' if args.lib_vuln else 'ALL'
             )
+        if args.app_filter:
+            modules = []
+            for app in all_applications:
+                module_id = f'"{app["app_id"]}"'
+                modules.append(module_id)
+            payload = '{"q":"","quickFilter":"%s","apps":[%s],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}' % (
+                'VULNERABLE' if args.lib_vuln else 'ALL',
+                ','.join(modules)
+                )
         r = requests.post(url_libraries, headers=headers, data=payload)
         data = r.json()
         print(data['success'])
@@ -325,11 +363,15 @@ def main():
                     csv_lines.append(csv_line)
 
             if len(csv_lines) > 0:
-                csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
-                with open(csv_path, 'w', encoding='shift_jis') as f:
-                   writer = csv.writer(f, lineterminator='\n')
-                   writer.writerow(CSV_HEADER_LIB)
-                   writer.writerows(csv_lines)
+                try:
+                    csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                    with open(csv_path, 'w', encoding='shift_jis') as f:
+                       writer = csv.writer(f, lineterminator='\n')
+                       writer.writerow(CSV_HEADER_LIB)
+                       writer.writerows(csv_lines)
+                except PermissionError:
+                    print('%sを書き込みモードで開くことができません。' % csv_path)
+                    sys.exit(1)
 
 
 if __name__ == '__main__':
