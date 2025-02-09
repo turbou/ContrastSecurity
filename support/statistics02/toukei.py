@@ -69,6 +69,9 @@ def main():
     parser.add_argument('--app', action='store_true', help='アプリケーションの情報のみ取得')
     parser.add_argument('--vul', action='store_true', help='脆弱性の情報のみ取得')
     parser.add_argument('--lib', action='store_true', help='ライブラリの情報のみ取得')
+    parser.add_argument('--vul_open', action='store_true', help='OPENな脆弱性の情報のみ取得')
+    parser.add_argument('--lib_vuln', action='store_true', help='脆弱性を含むライブラリの情報のみ取得')
+    parser.add_argument('--no_json', action='store_true', help='JSONファイルの出力を抑制')
     args = parser.parse_args()
 
     env_not_found = False
@@ -108,7 +111,7 @@ def main():
     except Exception as e:
         print(f"フォルダ作成中にエラーが発生しました: {e}")
         return
-    
+
     BASEURL = os.environ['CONTRAST_BASEURL']
     API_KEY = os.environ['CONTRAST_API_KEY']
     AUTHORIZATION = os.environ['CONTRAST_AUTHORIZATION']
@@ -129,7 +132,7 @@ def main():
         for app in data['applications']:
             print(app['name'])
             all_applications.append(app)
-    
+
         orgApplicationsIncompleteFlg = True
         orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
         while orgApplicationsIncompleteFlg:
@@ -141,11 +144,12 @@ def main():
                 all_applications.append(app)
                 orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
         print('Total(Applications): ', len(all_applications))
-    
-        # ファイルにJSONとして出力
-        json_path = os.path.join(folder_path, "applications.json")
-        with open(json_path, "w") as f:
-           json.dump(all_applications, f, indent=4)
+
+        if not args.no_json:
+            # ファイルにJSONとして出力
+            json_path = os.path.join(folder_path, "applications.json")
+            with open(json_path, "w") as f:
+               json.dump(all_applications, f, indent=4)
 
         csv_lines = []
         for app in all_applications:
@@ -153,7 +157,7 @@ def main():
             csv_line.append(app['name'])
             csv_line.append(app['scores']['letter_grade'])
             csv_lines.append(csv_line)
-        
+
         csv_path = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
         with open(csv_path, 'w', encoding='shift_jis') as f:
            writer = csv.writer(f, lineterminator='\n')
@@ -165,7 +169,9 @@ def main():
         print('OrgTraces Loading...')
         all_orgtraces = []
         url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(all_orgtraces), ORG_TRACES_LIMIT)
-        payload = '{"quickFilter":"ALL","modules":[],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}'
+        payload = '{"quickFilter":"%s","modules":[],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}' % (
+            'OPEN' if args.vul_open else 'ALL'
+            )
         r = requests.post(url_orgtraces, headers=headers, data=payload)
         data = r.json()
         totalCnt = data['count']
@@ -189,7 +195,7 @@ def main():
             else:
                 vuln['vulnerability']['routes'] = []
             all_orgtraces.append(vuln['vulnerability'])
-    
+
         orgTracesIncompleteFlg = True
         orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
         while orgTracesIncompleteFlg:
@@ -217,11 +223,12 @@ def main():
                 all_orgtraces.append(vuln['vulnerability'])
                 orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
         print('Total(OrgTraces): ', len(all_orgtraces))
-    
-        # ファイルにJSONとして出力
-        json_path = os.path.join(folder_path, "orgtraces.json")
-        with open(json_path, "w") as f:
-           json.dump(all_orgtraces, f, indent=4)
+
+        if not args.no_json:
+            # ファイルにJSONとして出力
+            json_path = os.path.join(folder_path, "orgtraces.json")
+            with open(json_path, "w") as f:
+               json.dump(all_orgtraces, f, indent=4)
 
         for app in all_applications:
             csv_lines = []
@@ -266,7 +273,9 @@ def main():
         print('Libraries Loading...')
         all_libraries = []
         url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
-        payload = '{"q":"","quickFilter":"ALL","apps":[],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}'
+        payload = '{"q":"","quickFilter":"%s","apps":[],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}' % (
+            'VULNERABLE' if args.lib_vuln else 'ALL'
+            )
         r = requests.post(url_libraries, headers=headers, data=payload)
         data = r.json()
         print(data['success'])
@@ -276,7 +285,7 @@ def main():
         for lib in data['libraries']:
             print(lib['file_name'])
             all_libraries.append(lib)
-    
+
         orgLibrariesIncompleteFlg = True
         orgLibrariesIncompleteFlg = totalCnt > len(all_libraries)
         while orgLibrariesIncompleteFlg:
@@ -288,11 +297,12 @@ def main():
                 all_libraries.append(lib)
                 orgLibrariesIncompleteFlg = totalCnt > len(all_libraries)
         print('Total(Libraries): ', len(all_libraries))
-    
-        # ファイルにJSONとして出力
-        json_path = os.path.join(folder_path, "libraries.json")
-        with open(json_path, "w") as f:
-           json.dump(all_libraries, f, indent=4)
+
+        if not args.no_json:
+            # ファイルにJSONとして出力
+            json_path = os.path.join(folder_path, "libraries.json")
+            with open(json_path, "w") as f:
+               json.dump(all_libraries, f, indent=4)
 
         for app in all_applications:
             csv_lines = []
