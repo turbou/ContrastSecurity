@@ -93,6 +93,9 @@ def main():
     if not (args.app or args.vul or args.lib):
         args.app = args.vul = args.lib = True
 
+    if args.vul or args.lib:
+        args.app = True
+
     base_dir = os.path.dirname(__file__)
     now = dt.now()
     timestamp_full = now.strftime("%Y%m%d%H%M")
@@ -158,27 +161,6 @@ def main():
             json_path = os.path.join(folder_path, "applications.json")
             with open(json_path, "w") as f:
                json.dump(all_applications, f, indent=4)
-
-        csv_lines_sum = []
-        for app in all_applications:
-            csv_line = []
-            csv_line.append(app['name'])
-            csv_line.append(app['scores']['letter_grade'])
-            csv_line.append(app['scores']['security']['grade'])
-            csv_line.append(app['scores']['platform']['grade'])
-            coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
-            csv_line.append('%d%%' % coverage)
-            csv_lines_sum.append(csv_line)
-
-        try:
-            csv_path = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
-            with open(csv_path, 'w', encoding='shift_jis') as f:
-               writer = csv.writer(f, lineterminator='\n')
-               writer.writerow(CSV_HEADER_SUMMARY)
-               writer.writerows(csv_lines_sum)
-        except PermissionError:
-            print('%sを書き込みモードで開くことができません。' % csv_path)
-            sys.exit(1)
 
     # =============== 組織全体の脆弱性一覧を取得 ===============
     if args.vul:
@@ -255,7 +237,17 @@ def main():
             with open(json_path, "w") as f:
                json.dump(all_orgtraces, f, indent=4)
 
+        csv_lines_sum = []
         for app in all_applications:
+            csv_line_sum = []
+            csv_line_sum.append(app['name'])
+            csv_line_sum.append(app['scores']['letter_grade'])
+            csv_line_sum.append(app['scores']['security']['grade'])
+            csv_line_sum.append(app['scores']['platform']['grade'])
+            coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
+            csv_line_sum.append('%d%%' % coverage)
+            csv_lines_sum.append(csv_line_sum)
+
             csv_lines_vul = []
             for trace in all_orgtraces:
                 if trace['application']['id'] == app['app_id']:
@@ -296,6 +288,16 @@ def main():
                 except PermissionError:
                     print('%sを書き込みモードで開くことができません。' % csv_path)
                     sys.exit(1)
+
+        try:
+            csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
+            with open(csv_path_sum, 'w', encoding='shift_jis') as f:
+               writer = csv.writer(f, lineterminator='\n')
+               writer.writerow(CSV_HEADER_SUMMARY)
+               writer.writerows(csv_lines_sum)
+        except PermissionError:
+            print('%sを書き込みモードで開くことができません。' % csv_path_sum)
+            sys.exit(1)
 
     # =============== 組織全体のライブラリ一覧を取得 ===============
     if args.lib:
