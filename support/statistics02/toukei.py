@@ -5,6 +5,7 @@ import html
 import json
 import os
 import sys
+from dateutil.relativedelta import relativedelta
 
 import requests
 
@@ -116,6 +117,10 @@ def main():
     except Exception as e:
         print(f"フォルダ作成中にエラーが発生しました: {e}")
         return
+
+    previous_month = now + relativedelta(months=-1)
+    previous_month_datetime = dt(previous_month.year, previous_month.month, previous_month.day, 0, 0, 0)
+    print(previous_month_datetime)
 
     BASEURL = os.environ['CONTRAST_BASEURL']
     API_KEY = os.environ['CONTRAST_API_KEY']
@@ -246,8 +251,12 @@ def main():
             csv_line_sum.append(app['scores']['platform']['grade'])
             coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
             csv_line_sum.append('%d%%' % coverage)
-            csv_lines_sum.append(csv_line_sum)
 
+            count_map = {key: [] for key in [
+                'new_critical', 'new_high', 'new_medium', 'new_low', 'new_notice',
+                'remain_critical', 'remain_high', 'remain_medium', 'remain_low', 'remain_notice',
+                'fixed_critical', 'fixed_high', 'fixed_medium', 'fixed_low', 'fixed_notice'
+            ]}
             csv_lines_vul = []
             for trace in all_orgtraces:
                 if trace['application']['id'] == app['app_id']:
@@ -288,6 +297,11 @@ def main():
                 except PermissionError:
                     print('%sを書き込みモードで開くことができません。' % csv_path)
                     sys.exit(1)
+
+            csv_line_sum.append(0)
+            for key in count_map:
+                csv_line_sum.append(len(count_map[key]))
+            csv_lines_sum.append(csv_line_sum)
 
         try:
             csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
@@ -348,9 +362,11 @@ def main():
             csv_lines_lib = []
             for lib in all_libraries:
                 exist_flg = False
+                lib_app_status = ''
                 for lib_app in lib['apps']:
                     if lib_app['app_id'] == app['app_id']:
                         exist_flg |= True
+                        lib_app_status = lib_app['app_library_status']
                 if exist_flg:
                     csv_line = []
                     csv_line.append(app['name'])
@@ -358,7 +374,7 @@ def main():
                     csv_line.append(lib['file_name'])
                     cves = [vuln["name"] for vuln in lib["vulns"]]
                     csv_line.append(', '.join(cves))
-                    csv_line.append('')
+                    csv_line.append(lib_app_status)
                     csv_line.append(lib['file_version'])
                     csv_line.append(lib['latest_version'])
                     csv_line.append('')
