@@ -19,7 +19,7 @@ CSV_HEADER_SUMMARY = [
     'カスタムコードのスコア',
     'ライブラリのスコア',
     'ルート疎通率',
-    '今までの検出されて+B32すべての脆弱性数（総数）',
+    '今までの検出されたすべての脆弱性数（総数）',
     '新規検出脆弱性数(重大)',
     '新規検出脆弱性数(高)',
     '新規検出脆弱性数(中)',
@@ -253,9 +253,9 @@ def main():
             csv_line_sum.append('%d%%' % coverage)
 
             count_map = {key: [] for key in [
-                'new_critical', 'new_high', 'new_medium', 'new_low', 'new_notice',
-                'remain_critical', 'remain_high', 'remain_medium', 'remain_low', 'remain_notice',
-                'fixed_critical', 'fixed_high', 'fixed_medium', 'fixed_low', 'fixed_notice'
+                'new_critical', 'new_high', 'new_medium', 'new_low', 'new_note',
+                'remain_critical', 'remain_high', 'remain_medium', 'remain_low', 'remain_note',
+                'fixed_critical', 'fixed_high', 'fixed_medium', 'fixed_low', 'fixed_note'
             ]}
             csv_lines_vul = []
             for trace in all_orgtraces:
@@ -286,7 +286,15 @@ def main():
                     csv_line.append(', '.join(note_buffer))
                     csv_line.append(', '.join(note_creators))
                     csv_lines_vul.append(csv_line)
-
+                    # Count
+                    first_detected = dt.fromtimestamp(trace['firstDetected'] / 1000)
+                    if trace['status'] == 'Fixed':
+                        count_map[f"fixed_{trace['severity'].lower()}"].append(trace['uuid'])
+                    else:
+                        if first_detected >= previous_month_datetime:
+                            count_map[f"new_{trace['severity'].lower()}"].append(trace['uuid'])
+                        else:
+                            count_map[f"remain_{trace['severity'].lower()}"].append(trace['uuid'])
             if len(csv_lines_vul) > 0:
                 try:
                     csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
@@ -298,7 +306,10 @@ def main():
                     print('%sを書き込みモードで開くことができません。' % csv_path)
                     sys.exit(1)
 
-            csv_line_sum.append(0)
+            list_of_values = list(count_map.values())
+            lengths_of_lists = [len(value) for value in list_of_values]
+            total_length = sum(lengths_of_lists)
+            csv_line_sum.append(total_length)
             for key in count_map:
                 csv_line_sum.append(len(count_map[key]))
             csv_lines_sum.append(csv_line_sum)
