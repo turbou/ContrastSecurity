@@ -99,3 +99,5 @@ statistics02
 └─Sum
         CA_Summary20250213.csv
 ```
+- 202502130850はAPI実行のレスポンス生データです。（複数のAPI実行の結果をマージしてる部分もあります）
+- --app_filterにPetClinic_8001を指定したサンプルです。
