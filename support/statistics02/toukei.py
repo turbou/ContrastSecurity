@@ -71,6 +71,7 @@ def main():
     parser.add_argument('--app', action='store_true', help='アプリケーションの情報のみ取得')
     parser.add_argument('--vul', action='store_true', help='脆弱性の情報のみ取得')
     parser.add_argument('--lib', action='store_true', help='ライブラリの情報のみ取得')
+    parser.add_argument('--licensed', action='store_true', help='ASSESSライセンスが付与されているアプリのみ対象')
     parser.add_argument('--vul_open', action='store_true', help='OPENな脆弱性の情報のみ取得')
     parser.add_argument('--lib_vuln', action='store_true', help='脆弱性を含むライブラリの情報のみ取得')
     parser.add_argument('--no_json', action='store_true', help='JSONファイルの出力を抑制')
@@ -136,9 +137,12 @@ def main():
     if args.app:
         print('Applications Loading...')
         url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,kip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
-        payload = '{"quickFilter":"ALL","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[]}'
+        payload = '{"quickFilter":"%s","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[]}' % (
+            'LICENSED' if args.licensed else 'ALL'
+            )
         if args.app_filter:
-            payload = '{"quickFilter":"ALL","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[], "filterText":"%s"}' % (
+            payload = '{"quickFilter":"%s","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[], "filterText":"%s"}' % (
+                'LICENSED' if args.licensed else 'ALL',
                 args.app_filter
                 )
         r = requests.post(url_applications, headers=headers, data=payload)
@@ -249,7 +253,10 @@ def main():
             csv_line_sum.append(app['scores']['letter_grade'])
             csv_line_sum.append(app['scores']['security']['grade'])
             csv_line_sum.append(app['scores']['platform']['grade'])
-            coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
+            try:
+                coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
+            except ZeroDivisionError:
+                coverage = 0
             csv_line_sum.append('%d%%' % coverage)
 
             count_map = {key: [] for key in [
