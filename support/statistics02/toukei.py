@@ -327,69 +327,63 @@ def main():
     # =============== 組織全体のライブラリ一覧を取得 ===============
     if args.lib:
         print('Libraries Loading...')
-        all_libraries = []
-        url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
-        payload = '{"q":"","quickFilter":"%s","apps":[],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}' % (
-            'VULNERABLE' if args.lib_vuln else 'ALL'
-            )
-        if args.app_filter:
-            modules = []
-            for app in all_applications:
-                module_id = f'"{app["app_id"]}"'
-                modules.append(module_id)
+        all_libraries_dict = {}
+        for app in all_applications:
+            print(app['name'])
+            all_libraries_by_app = []
+            module_id = f'"{app["app_id"]}"'
+            url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries_by_app), ORG_LIBRARIES_LIMIT)
             payload = '{"q":"","quickFilter":"%s","apps":[%s],"servers":[],"environments":[],"grades":[],"languages":[],"licenses":[],"status":[],"severities":[],"tags":[],"includeUnused":false,"includeUsed":false}' % (
                 'VULNERABLE' if args.lib_vuln else 'ALL',
-                ','.join(modules)
+                module_id
                 )
-        r = requests.post(url_libraries, headers=headers, data=payload)
-        data = r.json()
-        print(data['success'])
-        print(data['messages'])
-        totalCnt = data['count']
-        print(totalCnt)
-        for lib in data['libraries']:
-            print(lib['file_name'])
-            all_libraries.append(lib)
-
-        orgLibrariesIncompleteFlg = True
-        orgLibrariesIncompleteFlg = totalCnt > len(all_libraries)
-        while orgLibrariesIncompleteFlg:
-            url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries), ORG_LIBRARIES_LIMIT)
             r = requests.post(url_libraries, headers=headers, data=payload)
             data = r.json()
+            print(data['success'])
+            print(data['messages'])
+            totalCnt = data['count']
+            print(totalCnt)
             for lib in data['libraries']:
                 print(lib['file_name'])
-                all_libraries.append(lib)
-                orgLibrariesIncompleteFlg = totalCnt > len(all_libraries)
-        print('Total(Libraries): ', len(all_libraries))
+                all_libraries_by_app.append(lib)
+    
+            orgLibrariesIncompleteFlg = True
+            orgLibrariesIncompleteFlg = totalCnt > len(all_libraries_by_app)
+            while orgLibrariesIncompleteFlg:
+                url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries_by_app), ORG_LIBRARIES_LIMIT)
+                r = requests.post(url_libraries, headers=headers, data=payload)
+                data = r.json()
+                for lib in data['libraries']:
+                    print(lib['file_name'])
+                    all_libraries_by_app.append(lib)
+                    orgLibrariesIncompleteFlg = totalCnt > len(all_libraries_by_app)
+
+            all_libraries_dict[app['app_id']] = all_libraries_by_app
+        print('Total(Libraries): ', len(all_libraries_dict))
 
         if not args.no_json:
             # ファイルにJSONとして出力
             json_path = os.path.join(folder_path, "libraries.json")
             with open(json_path, "w") as f:
-               json.dump(all_libraries, f, indent=4)
+               json.dump(all_libraries_dict, f, indent=4)
 
         for app in all_applications:
             csv_lines_lib = []
-            for lib in all_libraries:
-                exist_flg = False
-                lib_app_status = ''
-                for lib_app in lib['apps']:
-                    if lib_app['app_id'] == app['app_id']:
-                        exist_flg |= True
-                        lib_app_status = lib_app['app_library_status']
-                if exist_flg:
-                    csv_line = []
-                    csv_line.append(app['name'])
-                    csv_line.append(lib['grade'])
-                    csv_line.append(lib['file_name'])
-                    cves = [vuln["name"] for vuln in lib["vulns"]]
-                    csv_line.append(', '.join(cves))
-                    csv_line.append(lib_app_status)
-                    csv_line.append(lib['file_version'])
-                    csv_line.append(lib['latest_version'])
-                    csv_line.append('')
-                    csv_lines_lib.append(csv_line)
+            for app_id, libraries in all_libraries_dict.items():
+                if app_id == app['app_id']:
+                    for lib in libraries:
+                        csv_line = []
+                        csv_line.append(app['name'])
+                        csv_line.append(lib['grade'])
+                        csv_line.append(lib['file_name'])
+                        cves = [vuln["name"] for vuln in lib["vulns"]]
+                        csv_line.append(', '.join(cves))
+                        csv_line.append(lib['apps'][0]['app_library_status'])
+                        csv_line.append('')
+                        csv_line.append(lib['file_version'])
+                        csv_line.append(lib['latest_version'])
+                        csv_line.append('')
+                        csv_lines_lib.append(csv_line)
 
             if len(csv_lines_lib) > 0:
                 try:
