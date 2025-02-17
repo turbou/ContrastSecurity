@@ -107,10 +107,10 @@ def main():
     folder_path_ap = os.path.join(base_dir, "AP")
     folder_path_lib = os.path.join(base_dir, "Lib")
     try:
-        os.makedirs(folder_path, exist_ok=True)  # exist_ok=True で既存フォルダの上書きを回避
-        os.makedirs(folder_path_sum, exist_ok=True)  # exist_ok=True で既存フォルダの上書きを回避
-        os.makedirs(folder_path_ap, exist_ok=True)  # exist_ok=True で既存フォルダの上書きを回避
-        os.makedirs(folder_path_lib, exist_ok=True)  # exist_ok=True で既存フォルダの上書きを回避
+        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(folder_path_sum, exist_ok=True)
+        os.makedirs(folder_path_ap, exist_ok=True)
+        os.makedirs(folder_path_lib, exist_ok=True)
         print(f"フォルダ '{folder_path}' を作成しました。")
         print(f"フォルダ '{folder_path_sum}' を作成しました。")
         print(f"フォルダ '{folder_path_ap}' を作成しました。")
@@ -121,7 +121,7 @@ def main():
 
     previous_month = now + relativedelta(months=-1)
     previous_month_datetime = dt(previous_month.year, previous_month.month, previous_month.day, 0, 0, 0)
-    print(previous_month_datetime)
+    print(f'One month ago today: {previous_month_datetime}')
 
     BASEURL = os.environ['CONTRAST_BASEURL']
     API_KEY = os.environ['CONTRAST_API_KEY']
@@ -148,7 +148,6 @@ def main():
         r = requests.post(url_applications, headers=headers, data=payload)
         data = r.json()
         totalCnt = data['count']
-        print(totalCnt)
         for app in data['applications']:
             print(app['name'])
             all_applications.append(app)
@@ -164,6 +163,7 @@ def main():
                 all_applications.append(app)
                 orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
         print('Total(Applications): ', len(all_applications))
+        print('')
 
         if not args.no_json:
             # ファイルにJSONとして出力
@@ -191,7 +191,6 @@ def main():
         r = requests.post(url_orgtraces, headers=headers, data=payload)
         data = r.json()
         totalCnt = data['count']
-        print(totalCnt)
         for vuln in data['items']:
             print(vuln['vulnerability']['uuid'])
             # Activity
@@ -239,6 +238,7 @@ def main():
                 all_orgtraces.append(vuln['vulnerability'])
                 orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
         print('Total(OrgTraces): ', len(all_orgtraces))
+        print('')
 
         if not args.no_json:
             # ファイルにJSONとして出力
@@ -353,7 +353,7 @@ def main():
             for lib in data['libraries']:
                 print(lib['file_name'])
                 all_libraries_by_app.append(lib)
-    
+
             orgLibrariesIncompleteFlg = True
             orgLibrariesIncompleteFlg = totalCnt > len(all_libraries_by_app)
             while orgLibrariesIncompleteFlg:
@@ -366,7 +366,10 @@ def main():
                     orgLibrariesIncompleteFlg = totalCnt > len(all_libraries_by_app)
 
             all_libraries_dict[app['app_id']] = all_libraries_by_app
-        print('Total(Libraries): ', len(all_libraries_dict))
+        print('Total(Libraries):')
+        for key, value in all_libraries_dict.items():
+            print(' - %s: %d' % (key, len(value)))
+        print('')
 
         if not args.no_json:
             # ファイルにJSONとして出力
