@@ -389,7 +389,6 @@ def main():
                         cves = [vuln["name"] for vuln in lib["vulns"]]
                         csv_line.append(', '.join(cves))
                         csv_line.append(lib['apps'][0]['app_library_status'])
-                        csv_line.append('')
                         csv_line.append(lib['file_version'])
                         csv_line.append(lib['latest_version'])
                         csv_line.append('')
