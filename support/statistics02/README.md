@@ -40,11 +40,13 @@ options:
   --app                 アプリケーションの情報のみ取得
   --vul                 脆弱性の情報のみ取得
   --lib                 ライブラリの情報のみ取得
+  --licensed            ASSESSライセンスが付与されているアプリのみ対象
   --vul_open            OPENな脆弱性の情報のみ取得
   --lib_vuln            脆弱性を含むライブラリの情報のみ取得
   --no_json             JSONファイルの出力を抑制
   --app_filter APP_FILTER
                         アプリケーション名フィルタ(例: PetClinic(デバッグ用))
+  --output_skeleton     出力設定のスケルトンファイル生成
 ```
 ### 通常の実行方法
 - 実行オプションの確認
