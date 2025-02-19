@@ -8,6 +8,7 @@ import sys
 from dateutil.relativedelta import relativedelta
 
 import requests
+import yaml
 
 ORG_APPLICATIONS_LIMIT = 100
 ORG_TRACES_LIMIT = 100
@@ -58,6 +59,25 @@ CSV_HEADER_LIB = [
     'アクティビティ(変更者)',
 ]
 
+OUTPUT_CONFIG = {
+    "sam": [
+        {"field": "app_name", "column": "アプリケーション名", "output": True},
+        {"field": "letter_grade", "column": "総合スコア", "output": True},
+        {"field": "security_grade", "column": "カスタムコードのスコア", "output": True},
+        {"field": "platform_grade", "column": "ライブラリのスコア", "output": True},
+    ],
+    "vul": [
+        {"field": "app_name", "column": "アプリケーション名", "output": True},
+        {"field": "severity", "column": "深刻度", "output": True},
+        {"field": "rule_name", "column": "脆弱性", "output": True},
+    ],
+    "lib": [
+        {"field": "app_name", "column": "アプリケーション名", "output": True},
+        {"field": "grade", "column": "スコア", "output": True},
+        {"field": "library_name", "column": "ライブラリ名", "output": True},
+    ],
+}
+
 
 def main():
 
@@ -76,7 +96,13 @@ def main():
     parser.add_argument('--lib_vuln', action='store_true', help='脆弱性を含むライブラリの情報のみ取得')
     parser.add_argument('--no_json', action='store_true', help='JSONファイルの出力を抑制')
     parser.add_argument('--app_filter', help='アプリケーション名フィルタ(例: PetClinic(デバッグ用))')
+    parser.add_argument('--output_skeleton', action='store_true', help='出力設定のスケルトンファイル生成')
     args = parser.parse_args()
+
+    if args.output_skeleton:
+        with open("output.yaml.skeleton", "w", encoding="utf-8") as f:
+            yaml.dump(OUTPUT_CONFIG, f, allow_unicode=True, indent=2)
+        return
 
     env_not_found = False
     for env_key in ['CONTRAST_BASEURL', 'CONTRAST_AUTHORIZATION', 'CONTRAST_API_KEY', 'CONTRAST_ORG_ID']:
@@ -107,11 +133,12 @@ def main():
     folder_path_ap = os.path.join(base_dir, "AP")
     folder_path_lib = os.path.join(base_dir, "Lib")
     try:
-        os.makedirs(folder_path, exist_ok=True)
+        if not args.no_json:
+            os.makedirs(folder_path, exist_ok=True)
+            print(f"フォルダ '{folder_path}' を作成しました。")
         os.makedirs(folder_path_sum, exist_ok=True)
         os.makedirs(folder_path_ap, exist_ok=True)
         os.makedirs(folder_path_lib, exist_ok=True)
-        print(f"フォルダ '{folder_path}' を作成しました。")
         print(f"フォルダ '{folder_path_sum}' を作成しました。")
         print(f"フォルダ '{folder_path_ap}' を作成しました。")
         print(f"フォルダ '{folder_path_lib}' を作成しました。")
@@ -134,6 +161,7 @@ def main():
 
     # =============== 組織全体のアプリケーション一覧を取得 ===============
     all_applications = []
+    app_name_dict = {}
     if args.app:
         print('Applications Loading...')
         url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,kip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
@@ -150,6 +178,7 @@ def main():
         totalCnt = data['count']
         for app in data['applications']:
             print(app['name'])
+            app_name_dict[app['app_id']] = app['name']
             all_applications.append(app)
 
         orgApplicationsIncompleteFlg = True
@@ -368,7 +397,7 @@ def main():
             all_libraries_dict[app['app_id']] = all_libraries_by_app
         print('Total(Libraries):')
         for key, value in all_libraries_dict.items():
-            print(' - %s: %d' % (key, len(value)))
+            print(' - %s: %d' % (app_name_dict[key], len(value)))
         print('')
 
         if not args.no_json:
