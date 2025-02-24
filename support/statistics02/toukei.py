@@ -189,6 +189,7 @@ def main():
             data = r.json()
             for app in data['applications']:
                 print(app['name'])
+                app_name_dict[app['app_id']] = app['name']
                 all_applications.append(app)
                 orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
         print('Total(Applications): ', len(all_applications))
