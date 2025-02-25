@@ -76,11 +76,11 @@ def main():
     specify_application_ids = []
 
     # =============== 組織全体のアプリケーション一覧を取得 ===============
-    all_applications = []
     app_name_dict = {}
+    all_app_dict = {}
     if args.app:
         print('Applications Loading...')
-        url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,kip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
+        url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,kip_links' % (API_URL, ORG_ID, len(all_app_dict), ORG_APPLICATIONS_LIMIT)
         payload = '{"quickFilter":"%s","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[]}' % (
             'LICENSED' if args.licensed else 'ALL'
             )
@@ -95,37 +95,39 @@ def main():
         for app in data['applications']:
             print(app['name'])
             app_name_dict[app['app_id']] = app['name']
-            all_applications.append(app)
+            all_app_dict[app['app_id']] = app
 
         orgApplicationsIncompleteFlg = True
-        orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
+        orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
         while orgApplicationsIncompleteFlg:
-            url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_applications), ORG_APPLICATIONS_LIMIT)
+            url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_app_dict), ORG_APPLICATIONS_LIMIT)
             r = requests.post(url_applications, headers=headers, data=payload)
             data = r.json()
             for app in data['applications']:
                 print(app['name'])
-                all_applications.append(app)
-                orgApplicationsIncompleteFlg = totalCnt > len(all_applications)
-        print('Total(Applications): ', len(all_applications))
+                app_name_dict[app['app_id']] = app['name']
+                all_app_dict[app['app_id']] = app
+                orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
+        print('Total(Applications): ', len(all_app_dict))
         print('')
 
         # ファイルにJSONとして出力
         json_path = os.path.join(folder_path, "applications.json")
         with open(json_path, "w") as f:
-           json.dump(all_applications, f, indent=4)
+           json.dump(all_app_dict, f, indent=4)
 
     # =============== 組織全体の脆弱性一覧を取得 ===============
     if args.vul:
         print('OrgTraces Loading...')
         all_orgtraces = []
-        url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(all_orgtraces), ORG_TRACES_LIMIT)
+        orgtraces_dict = {}
+        url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(orgtraces_dict), ORG_TRACES_LIMIT)
         payload = '{"quickFilter":"%s","modules":[],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}' % (
             'OPEN' if args.vul_open else 'ALL'
             )
         if args.app_filter:
             modules = []
-            for app in all_applications:
+            for app_id, app in all_app_dict.items():
                 module_id = f'"{app["app_id"]}"'
                 modules.append(module_id)
             payload = '{"quickFilter":"%s","modules":[%s],"servers":[],"filterTags":[],"severities":[],"status":[],"substatus":[],"vulnTypes":[],"environments":[],"urls":[],"sinks":[],"securityStandards":[],"appVersionTags":[],"routes":[],"tracked":false,"untracked":false,"technologies":[],"applicationTags":[],"applicationMetadataFilters":[],"applicationImportances":[],"languages":[],"licensedOnly":false}' % (
@@ -154,11 +156,12 @@ def main():
             else:
                 vuln['vulnerability']['routes'] = []
             all_orgtraces.append(vuln['vulnerability'])
+            orgtraces_dict[vuln['vulnerability']['uuid']] = vuln['vulnerability']
 
         orgTracesIncompleteFlg = True
-        orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
+        orgTracesIncompleteFlg = totalCnt > len(orgtraces_dict)
         while orgTracesIncompleteFlg:
-            url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(all_orgtraces), ORG_TRACES_LIMIT)
+            url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(orgtraces_dict), ORG_TRACES_LIMIT)
             r = requests.post(url_orgtraces, headers=headers, data=payload)
             data = r.json()
             for vuln in data['items']:
@@ -180,20 +183,21 @@ def main():
                 else:
                     vuln['vulnerability']['routes'] = []
                 all_orgtraces.append(vuln['vulnerability'])
-                orgTracesIncompleteFlg = totalCnt > len(all_orgtraces)
-        print('Total(OrgTraces): ', len(all_orgtraces))
+                orgtraces_dict[vuln['vulnerability']['uuid']] = vuln['vulnerability']
+                orgTracesIncompleteFlg = totalCnt > len(orgtraces_dict)
+        print('Total(OrgTraces): ', len(orgtraces_dict))
         print('')
 
         # ファイルにJSONとして出力
         json_path = os.path.join(folder_path, "orgtraces.json")
         with open(json_path, "w") as f:
-           json.dump(all_orgtraces, f, indent=4)
+           json.dump(orgtraces_dict, f, indent=4)
 
     # =============== 組織全体のライブラリ一覧を取得 ===============
     if args.lib:
         print('Libraries Loading...')
         all_libraries_dict = {}
-        for app in all_applications:
+        for app_id, app in all_app_dict.items():
             print(app['name'])
             all_libraries_by_app = []
             module_id = f'"{app["app_id"]}"'
