@@ -12,5 +12,5 @@ python-redmine==2.3.0
 celery==5.1.2
 django-celery-beat==2.2.1
 django-celery-results==2.2.0
-redis==3.5.3
+redis==4.4.4
 
