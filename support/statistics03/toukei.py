@@ -288,7 +288,7 @@ def main():
                         count_map[f"remain_{trace['severity'].lower()}"].append(trace['uuid'])
         if len(csv_lines_vul) > 0:
             try:
-                csv_path = os.path.join(folder_path_ap, 'CA_%s%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                csv_path = os.path.join(folder_path_ap, 'CA_%s_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                 with open(csv_path, 'w', encoding='shift_jis') as f:
                    writer = csv.writer(f, lineterminator='\n')
                    writer.writerow(CSV_HEADER_VUL)
@@ -306,7 +306,7 @@ def main():
         csv_lines_sum.append(csv_line_sum)
 
     try:
-        csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary%s.csv' % (timestamp_ym))
+        csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary_%s.csv' % (timestamp_ym))
         with open(csv_path_sum, 'w', encoding='shift_jis') as f:
            writer = csv.writer(f, lineterminator='\n')
            writer.writerow(CSV_HEADER_SUMMARY)
@@ -333,7 +333,7 @@ def main():
 
         if len(csv_lines_lib) > 0:
             try:
-                csv_path = os.path.join(folder_path_lib, 'CA_%sLibrary%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
+                csv_path = os.path.join(folder_path_lib, 'CA_%s_Library_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                 with open(csv_path, 'w', encoding='shift_jis') as f:
                    writer = csv.writer(f, lineterminator='\n')
                    writer.writerow(CSV_HEADER_LIB)
