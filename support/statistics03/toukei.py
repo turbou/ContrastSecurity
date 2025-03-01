@@ -154,8 +154,21 @@ def main():
                 libraries_json = os.path.join(child, "libraries.json")
                 try:
                     # Applications
+                    removed_apps = []
                     with open(applications_json, 'r', encoding='utf-8') as f:
                         data = json.load(f)
+                        # 削除されたかチェック
+                        for org_app_id, org_app in applications_dict.items():
+                            exist_app_flg = False
+                            for app_id, app in data.items():
+                                if org_app_id == app_id:
+                                    exist_app_flg |= True
+                            if not exist_app_flg:
+                                # org_app['removed'] = True
+                                removed_apps.append(org_app_id)
+                            # else:
+                            #     org_app['removed'] = False
+
                         for app_id, app in data.items():
                             applications_dict[app_id] = app
 
@@ -169,7 +182,7 @@ def main():
                             for trace_uuid, trace in data.items():
                                 if org_trace_uuid == trace_uuid:
                                     exist_trace_flg |= True
-                            if not exist_trace_flg:
+                            if not exist_trace_flg and not org_trace['application']['id'] in removed_apps:  # アプリが削除してしまった場合を考慮
                                 org_trace['status'] = 'Removed'
                                 removed_traces.append(org_trace_uuid)
                         
@@ -243,8 +256,8 @@ def main():
         count_map = {key: [] for key in [
             'new_critical', 'new_high', 'new_medium', 'new_low', 'new_note',
             'remain_critical', 'remain_high', 'remain_medium', 'remain_low', 'remain_note',
-            'fixed_critical', 'fixed_high', 'fixed_medium', 'fixed_low', 'fixed_note'
-            'removed_critical', 'removed_high', 'removed_medium', 'removed_low', 'removed_note'
+            'fixed_critical', 'fixed_high', 'fixed_medium', 'fixed_low', 'fixed_note',
+            'removed_critical', 'removed_high', 'removed_medium', 'removed_low', 'removed_note',
         ]}
         csv_lines_vul = []
         for trace_uuid, trace in orgtraces_dict.items():
