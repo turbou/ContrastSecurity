@@ -1,6 +1,6 @@
 import argparse
 import csv
-from datetime import datetime as dt
+from datetime import timedelta, datetime as dt
 import html
 import json
 import os
@@ -99,8 +99,7 @@ def main():
     parser.add_argument('--app_filter', help='アプリケーション名フィルタ(例: PetClinic(デバッグ用))')
     parser.add_argument('--last_month', action='store_true', help='先月分の解析')
     parser.add_argument('--this_month', action='store_true', help='今月分の解析')
-    parser.add_argument('--date_from', help='解析開始日（YYYYMMDD）')
-    parser.add_argument('--date_to', help='解析終了日（YYYYMMDD）')
+    parser.add_argument('--date_range', help='解析期間（YYYYMMDD-YYYYMMDD）')
     parser.add_argument('--output_template', action='store_true', help='出力設定のテンプレートファイル生成')
     args = parser.parse_args()
 
@@ -125,12 +124,28 @@ def main():
 
     now = dt.now()
     new_threshold_datetime = None
+    patterns = []
     if args.last_month:
         previous_month = now + relativedelta(months=-1, day=1)
         new_threshold_datetime = dt(previous_month.year, previous_month.month, previous_month.day, 0, 0, 0)
+        yyyymmdd_str = new_threshold_datetime.strftime('%Y%m')
+        patterns = [r"^%s\d{6}$" % yyyymmdd_str]
     if args.this_month:
         previous_month = now + relativedelta(day=1)
         new_threshold_datetime = dt(previous_month.year, previous_month.month, previous_month.day, 0, 0, 0)
+        yyyymmdd_str = new_threshold_datetime.strftime('%Y%m')
+        patterns = [r"^%s\d{6}$" % yyyymmdd_str]
+    if args.date_range:
+        from_date_obj = dt.strptime(args.date_range.split('-')[0], "%Y%m%d")
+        new_threshold_datetime = dt(from_date_obj.year, from_date_obj.month, from_date_obj.day, 0, 0, 0)
+        to_date_obj = dt.strptime(args.date_range.split('-')[1], "%Y%m%d")
+        days = (to_date_obj - from_date_obj).days + 1  # 期間の日数
+        date_list = [from_date_obj + timedelta(days=i) for i in range(days)]
+        date_strings = [date.strftime("%Y%m%d") for date in date_list]
+        for date_string in date_strings:
+            patterns.append(r"^%s\d{4}$" % date_string)
+    if len(patterns) == 0:
+        patterns.append(r"^\d{12}$")
     print(f'New Threshold Date: {new_threshold_datetime}')
 
     # toukei_base_dir = os.path.dirname(__file__)
@@ -143,11 +158,14 @@ def main():
     orgtraces_dict = {}
     libraries_dict = {}
 
-    pattern = r"^\d{12}$"
     for child in toukei_path.iterdir():
         if child.is_dir():
-            match = re.match(pattern, child.name)
-            if bool(match):
+            match_flg = False
+            for pattern in patterns:
+                match = re.match(pattern, child.name)
+                if bool(match):
+                    match_flg |= True
+            if match_flg:
                 print(child.name)
                 applications_json = os.path.join(child, "applications.json")
                 orgtraces_json = os.path.join(child, "orgtraces.json")
