@@ -1,17 +1,25 @@
 # ContrastのAPIを使った統計のサンプル1
 
 ## 環境準備
-Python3はWindowsにインストール済みの前提です。  
+Python3はWindowsまたはMacにインストール済みの前提です。  
 3.13.1で動作確認をしています。
 - 仮想環境作成
 
 ```cmd
-python -m venv sample_venv
+python3 -m venv sample_venv
 ```
 - アクティベート
 
+Windows  
+
 ```cmd
 .\sample_venv\Scripts\activate
+```
+
+Mac  
+
+```bash
+source ./sample_venv/bin/activate
 ```
 
 - 必要なパッケージをインストール

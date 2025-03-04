@@ -71,7 +71,32 @@ OUTPUT_CONFIG = {
         {"field": "app_name", "column": "アプリケーション名", "output": True},
         {"field": "letter_grade", "column": "総合スコア", "output": True},
         {"field": "security_grade", "column": "カスタムコードのスコア", "output": True},
+        {"field": "created_at", "column": "オンボード日時", "output": False},
+        {"field": "removed_app", "column": "削除フラグ", "output": False},
         {"field": "platform_grade", "column": "ライブラリのスコア", "output": True},
+        {"field": "platform_grade", "column": "脆弱ライブラリ数", "output": False},
+        {"field": "platform_grade", "column": "ライブラリ総数", "output": False},
+        {"field": "vul_total", "column": "今までの検出されたすべての脆弱性数（総数）", "output": True},
+        {"field": "new_critical", "column": "新規検出脆弱性数(重大)", "output": True},
+        {"field": "new_high", "column": "新規検出脆弱性数(高)", "output": True},
+        {"field": "new_medium", "column": "新規検出脆弱性数(中)", "output": True},
+        {"field": "new_low", "column": "新規検出脆弱性数(低)", "output": True},
+        {"field": "new_note", "column": "新規検出脆弱性数(注意)", "output": True},
+        {"field": "remain_critical", "column": "残存脆弱性数(重大)", "output": True},
+        {"field": "remain_high", "column": "残存脆弱性数(高)", "output": True},
+        {"field": "remain_medium", "column": "残存脆弱性数(中)", "output": True},
+        {"field": "remain_low", "column": "残存脆弱性数(低)", "output": True},
+        {"field": "remain_note", "column": "残存脆弱性数(注意)", "output": True},
+        {"field": "fixed_critical", "column": "修正済脆弱性数(重大)", "output": True},
+        {"field": "fixed_high", "column": "修正済脆弱性数(高)", "output": True},
+        {"field": "fixed_medium", "column": "修正済脆弱性数(中)", "output": True},
+        {"field": "fixed_low", "column": "修正済脆弱性数(低)", "output": True},
+        {"field": "fixed_note", "column": "修正済脆弱性数(注意)", "output": True},
+        {"field": "removed_critical", "column": "削除済脆弱性数(重大)", "output": True},
+        {"field": "removed_high", "column": "削除済脆弱性数(高)", "output": True},
+        {"field": "removed_medium", "column": "削除済脆弱性数(中)", "output": True},
+        {"field": "removed_low", "column": "削除済脆弱性数(低)", "output": True},
+        {"field": "removed_note", "column": "削除済脆弱性数(注意)", "output": True},
     ],
     "vul": [
         {"field": "app_name", "column": "アプリケーション名", "output": True},
@@ -81,7 +106,8 @@ OUTPUT_CONFIG = {
         {"field": "routes", "column": "検出URL", "output": True, "separator": ", "},
         {"field": "activities_desc", "column": "アクティビティ(変更内容)", "output": True, "separator": ", "},
         {"field": "activities_user", "column": "アクティビティ(変更者)", "output": True, "separator": ", "},
-        {"field": "status", "column": "ステータス", "output": False},
+        {"field": "first_detected", "column": "最初の検出日時", "output": False},
+        {"field": "last_detected", "column": "最後の検出日時", "output": False},
     ],
     "lib": [
         {"field": "app_name", "column": "アプリケーション名", "output": True},
@@ -91,6 +117,9 @@ OUTPUT_CONFIG = {
         {"field": "status", "column": "ステータス", "output": True},
         {"field": "current_version", "column": "利用バージョン", "output": True},
         {"field": "latest_version", "column": "最新バージョン", "output": True},
+        {"field": "use_class_count", "column": "使用クラス数", "output": False},
+        {"field": "all_class_count", "column": "全体クラス数", "output": False},
+        {"field": "license", "column": "ライセンス", "output": False, "separator": ", "},
     ],
 }
 
@@ -162,6 +191,14 @@ def main():
     if not toukei_path.is_dir():
         print(f"エラー: 指定されたパス '{toukei_path}' はフォルダではない、または存在しません。")
         return
+
+    output_settings = None
+    this_script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_yaml_path = os.path.join(this_script_dir, 'output.yaml')
+    if os.path.exists(output_yaml_path):
+        with open(output_yaml_path, 'r') as file:
+            output_settings = yaml.safe_load(file)
+    print(output_settings)
 
     applications_dict = {}
     orgtraces_dict = {}
@@ -267,6 +304,12 @@ def main():
         print(f"フォルダ作成中にエラーが発生しました: {e}")
         return
 
+    csv_vul_headers = []
+    for vul_output in output_settings['vul']:
+        if not vul_output['output']:
+            continue
+        csv_vul_headers.append(vul_output['column'])
+
     csv_lines_sum = []
     for app_id, app in applications_dict.items():
         csv_line_sum = []
@@ -290,30 +333,59 @@ def main():
         for trace_uuid, trace in orgtraces_dict.items():
             if trace['application']['id'] == app['app_id']:
                 csv_line = []
-                csv_line.append(app['name'])
-                csv_line.append(trace['severity'])
-                csv_line.append(trace['ruleName'])
-                csv_line.append(trace['status'])
-                route_urls = ['%s(%s)' % (observation['url'], observation['verb']) for route in trace['routes'] for observation in route['observations']]
-                csv_line.append(', '.join(route_urls))
-                note_buffer = []
-                note_creators = []
-                for note in trace["notes"]:
-                    status_before = None
-                    status_after = None
-                    if 'properties' in note:
-                        for prop in note['properties']:
-                            if prop['name'] == 'status.change.previous.status':
-                                status_before = prop['value']
-                            if prop['name'] == 'status.change.status':
-                                status_after = prop['value']
-                    status_chg_str = ''
-                    if status_before and status_after:
-                        status_chg_str = '(%s -> %s)' % (status_before, status_after)
-                    note_buffer.append('%s%s' % (html.unescape(note['note']), status_chg_str))
-                    note_creators.append(note['creator'] if note['creator'] else '')
-                csv_line.append(', '.join(note_buffer))
-                csv_line.append(', '.join(note_creators))
+                for vul_output in output_settings['vul']:
+                    if not vul_output['output']:
+                        continue
+                    match vul_output['field']:
+                        case 'app_name':
+                            csv_line.append(app['name'])
+                        case 'severity':
+                            csv_line.append(trace['severity'])
+                        case 'rule_name':
+                            csv_line.append(trace['ruleName'])
+                        case 'status':
+                            csv_line.append(trace['status'])
+                        case 'routes':
+                            route_urls = ['%s(%s)' % (observation['url'], observation['verb']) for route in trace['routes'] for observation in route['observations']]
+                            csv_line.append(', '.join(route_urls))
+                        case 'activities_desc':
+                            note_buffer = []
+                            for note in trace["notes"]:
+                                status_before = None
+                                status_after = None
+                                if 'properties' in note:
+                                    for prop in note['properties']:
+                                        if prop['name'] == 'status.change.previous.status':
+                                            status_before = prop['value']
+                                        if prop['name'] == 'status.change.status':
+                                            status_after = prop['value']
+                                status_chg_str = ''
+                                if status_before and status_after:
+                                    status_chg_str = '(%s -> %s)' % (status_before, status_after)
+                                note_buffer.append('%s%s' % (html.unescape(note['note']), status_chg_str))
+                            csv_line.append(', '.join(note_buffer))
+                        case 'activities_user':
+                            note_creators = []
+                            for note in trace["notes"]:
+                                status_before = None
+                                status_after = None
+                                if 'properties' in note:
+                                    for prop in note['properties']:
+                                        if prop['name'] == 'status.change.previous.status':
+                                            status_before = prop['value']
+                                        if prop['name'] == 'status.change.status':
+                                            status_after = prop['value']
+                                status_chg_str = ''
+                                if status_before and status_after:
+                                    status_chg_str = '(%s -> %s)' % (status_before, status_after)
+                                note_creators.append(note['creator'] if note['creator'] else '')
+                            csv_line.append(', '.join(note_creators))
+                        case 'first_detected':
+                            first_detected = dt.fromtimestamp(trace['firstDetected'] / 1000)
+                            csv_line.append(first_detected)
+                        case 'last_detected':
+                            last_detected = dt.fromtimestamp(trace['lastDetected'] / 1000)
+                            csv_line.append(last_detected)
                 csv_lines_vul.append(csv_line)
                 # Count
                 first_detected = dt.fromtimestamp(trace['firstDetected'] / 1000)
@@ -331,7 +403,7 @@ def main():
                 csv_path = os.path.join(folder_path_ap, 'CA_%s_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                 with open(csv_path, 'w', encoding='shift_jis') as f:
                    writer = csv.writer(f, lineterminator='\n')
-                   writer.writerow(CSV_HEADER_VUL)
+                   writer.writerow(csv_vul_headers)
                    writer.writerows(csv_lines_vul)
             except PermissionError:
                 print('%sを書き込みモードで開くことができません。' % csv_path)
@@ -355,20 +427,46 @@ def main():
         print('%sを書き込みモードで開くことができません。' % csv_path_sum)
         sys.exit(1)
 
+    csv_lib_headers = []
+    for lib_output in output_settings['lib']:
+        if not lib_output['output']:
+            continue
+        csv_lib_headers.append(lib_output['column'])
+                                
     for app_id, app in applications_dict.items():
         csv_lines_lib = []
         for app_id, libraries in libraries_dict.items():
             if app_id == app['app_id']:
                 for lib in libraries:
                     csv_line = []
-                    csv_line.append(app['name'])
-                    csv_line.append(lib['grade'])
-                    csv_line.append(lib['file_name'])
-                    cves = [vuln["name"] for vuln in lib["vulns"]]
-                    csv_line.append(', '.join(cves))
-                    csv_line.append(lib['apps'][0]['app_library_status'])
-                    csv_line.append(lib['file_version'])
-                    csv_line.append(lib['latest_version'])
+                    for lib_output in output_settings['lib']:
+                        if not lib_output['output']:
+                            continue
+                        match lib_output['field']:
+                            case 'app_name':
+                                csv_line.append(app['name'])
+                            case 'grade':
+                                csv_line.append(lib['grade'])
+                            case 'library_name':
+                                csv_line.append(lib['file_name'])
+                            case 'vulns':
+                                cves = [vuln["name"] for vuln in lib["vulns"]]
+                                separator = lib_output['separator']
+                                csv_line.append(separator.join(cves))
+                            case 'status':
+                                csv_line.append(lib['apps'][0]['app_library_status'])
+                            case 'current_version':
+                                csv_line.append(lib['file_version'])
+                            case 'latest_version':
+                                csv_line.append(lib['latest_version'])
+                            case 'use_class_count':
+                                csv_line.append(lib['classes_used'])
+                            case 'all_class_count':
+                                csv_line.append(lib['class_count'])
+                            case 'license':
+                                licenses = [license for license in lib["licenses"]]
+                                separator = lib_output['separator']
+                                csv_line.append(separator.join(licenses))
                     csv_lines_lib.append(csv_line)
 
         if len(csv_lines_lib) > 0:
@@ -376,7 +474,7 @@ def main():
                 csv_path = os.path.join(folder_path_lib, 'CA_%s_Library_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
                 with open(csv_path, 'w', encoding='shift_jis') as f:
                    writer = csv.writer(f, lineterminator='\n')
-                   writer.writerow(CSV_HEADER_LIB)
+                   writer.writerow(csv_lib_headers)
                    writer.writerows(csv_lines_lib)
             except PermissionError:
                 print('%sを書き込みモードで開くことができません。' % csv_path)
