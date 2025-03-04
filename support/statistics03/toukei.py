@@ -67,7 +67,7 @@ CSV_HEADER_LIB = [
 ]
 
 OUTPUT_CONFIG = {
-    "sam": [
+    "sum": [
         {"field": "app_name", "column": "アプリケーション名", "output": True},
         {"field": "letter_grade", "column": "総合スコア", "output": True},
         {"field": "security_grade", "column": "カスタムコードのスコア", "output": True},
@@ -77,11 +77,20 @@ OUTPUT_CONFIG = {
         {"field": "app_name", "column": "アプリケーション名", "output": True},
         {"field": "severity", "column": "深刻度", "output": True},
         {"field": "rule_name", "column": "脆弱性", "output": True},
+        {"field": "status", "column": "ステータス", "output": True},
+        {"field": "routes", "column": "検出URL", "output": True, "separator": ", "},
+        {"field": "activities_desc", "column": "アクティビティ(変更内容)", "output": True, "separator": ", "},
+        {"field": "activities_user", "column": "アクティビティ(変更者)", "output": True, "separator": ", "},
+        {"field": "status", "column": "ステータス", "output": False},
     ],
     "lib": [
         {"field": "app_name", "column": "アプリケーション名", "output": True},
         {"field": "grade", "column": "スコア", "output": True},
         {"field": "library_name", "column": "ライブラリ名", "output": True},
+        {"field": "vulns", "column": "脆弱性", "output": True, "separator": ", "},
+        {"field": "status", "column": "ステータス", "output": True},
+        {"field": "current_version", "column": "利用バージョン", "output": True},
+        {"field": "latest_version", "column": "最新バージョン", "output": True},
     ],
 }
 
