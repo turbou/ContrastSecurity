@@ -71,11 +71,15 @@ OUTPUT_CONFIG = {
         {"field": "app_name", "column": "アプリケーション名", "output": True},
         {"field": "letter_grade", "column": "総合スコア", "output": True},
         {"field": "security_grade", "column": "カスタムコードのスコア", "output": True},
-        {"field": "created_at", "column": "オンボード日時", "output": False},
-        {"field": "removed_app", "column": "削除フラグ", "output": False},
         {"field": "platform_grade", "column": "ライブラリのスコア", "output": True},
-        {"field": "platform_grade", "column": "脆弱ライブラリ数", "output": False},
-        {"field": "platform_grade", "column": "ライブラリ総数", "output": False},
+        {"field": "route_coverage", "column": "ルート疎通率", "output": True},
+        {"field": "route_exercised", "column": "疎通済みルート数", "output": True},
+        {"field": "route_discovered", "column": "全ルート数", "output": True},
+        {"field": "vuln_library_count", "column": "脆弱ライブラリ数", "output": False},
+        {"field": "library_count", "column": "ライブラリ総数", "output": False},
+        {"field": "created", "column": "オンボード日時", "output": False},
+        {"field": "archived", "column": "アーカイブ", "output": False},
+        {"field": "removed", "column": "削除フラグ", "output": False},
         {"field": "vul_total", "column": "今までの検出されたすべての脆弱性数（総数）", "output": True},
         {"field": "new_critical", "column": "新規検出脆弱性数(重大)", "output": True},
         {"field": "new_high", "column": "新規検出脆弱性数(高)", "output": True},
@@ -198,11 +202,11 @@ def main():
     if os.path.exists(output_yaml_path):
         with open(output_yaml_path, 'r') as file:
             output_settings = yaml.safe_load(file)
-    print(output_settings)
 
     applications_dict = {}
     orgtraces_dict = {}
     libraries_dict = {}
+    removed_apps = []
 
     for child in toukei_path.iterdir():
         if child.is_dir():
@@ -218,7 +222,6 @@ def main():
                 libraries_json = os.path.join(child, "libraries.json")
                 try:
                     # Applications
-                    removed_apps = []
                     with open(applications_json, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                         # 削除されたかチェック
@@ -304,6 +307,12 @@ def main():
         print(f"フォルダ作成中にエラーが発生しました: {e}")
         return
 
+    csv_sum_headers = []
+    for sum_output in output_settings['sum']:
+        if not sum_output['output']:
+            continue
+        csv_sum_headers.append(sum_output['column'])
+
     csv_vul_headers = []
     for vul_output in output_settings['vul']:
         if not vul_output['output']:
@@ -312,17 +321,6 @@ def main():
 
     csv_lines_sum = []
     for app_id, app in applications_dict.items():
-        csv_line_sum = []
-        csv_line_sum.append(app['name'])
-        csv_line_sum.append(app['scores']['letter_grade'])
-        csv_line_sum.append(app['scores']['security']['grade'])
-        csv_line_sum.append(app['scores']['platform']['grade'])
-        try:
-            coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
-        except ZeroDivisionError:
-            coverage = 0
-        csv_line_sum.append('%d%%' % coverage)
-
         count_map = {key: [] for key in [
             'new_critical', 'new_high', 'new_medium', 'new_low', 'new_note',
             'remain_critical', 'remain_high', 'remain_medium', 'remain_low', 'remain_note',
@@ -412,16 +410,51 @@ def main():
         list_of_values = list(count_map.values())
         lengths_of_lists = [len(value) for value in list_of_values]
         total_length = sum(lengths_of_lists)
-        csv_line_sum.append(total_length)
-        for key in count_map:
-            csv_line_sum.append(len(count_map[key]))
+        csv_line_sum = []
+        for sum_output in output_settings['sum']:
+            if not sum_output['output']:
+                continue
+            match sum_output['field']:
+                case 'app_name':
+                    csv_line_sum.append(app['name'])
+                case 'letter_grade':
+                    csv_line_sum.append(app['scores']['letter_grade'])
+                case 'security_grade':
+                    csv_line_sum.append(app['scores']['security']['grade'])
+                case 'platform_grade':
+                    csv_line_sum.append(app['scores']['platform']['grade'])
+                case 'route_coverage':
+                    try:
+                        coverage = (app['routes']['exercised'] / app['routes']['discovered']) * 100
+                    except ZeroDivisionError:
+                        coverage = 0
+                    csv_line_sum.append('%d%%' % coverage)
+                case 'route_exercised':
+                    csv_line_sum.append(app['routes']['exercised'])
+                case 'route_discovered':
+                    csv_line_sum.append(app['routes']['discovered'])
+                case 'vuln_library_count':
+                    csv_line_sum.append('-')
+                case 'library_count':
+                    csv_line_sum.append('-')
+                case 'created':
+                    created = dt.fromtimestamp(app['created'] / 1000)
+                    csv_line_sum.append(created)
+                case 'archived':
+                    csv_line_sum.append(app['archived'])
+                case 'removed':
+                    csv_line_sum.append(app['app_id'] in removed_apps)
+                case 'vul_total':
+                    csv_line_sum.append(total_length)
+                case _:
+                    csv_line_sum.append(len(count_map[sum_output['field']]))
         csv_lines_sum.append(csv_line_sum)
 
     try:
         csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary_%s.csv' % (timestamp_ym))
         with open(csv_path_sum, 'w', encoding='shift_jis') as f:
            writer = csv.writer(f, lineterminator='\n')
-           writer.writerow(CSV_HEADER_SUMMARY)
+           writer.writerow(csv_sum_headers)
            writer.writerows(csv_lines_sum)
     except PermissionError:
         print('%sを書き込みモードで開くことができません。' % csv_path_sum)
