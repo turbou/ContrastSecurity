@@ -434,9 +434,9 @@ def main():
                 case 'route_discovered':
                     csv_line_sum.append(app['routes']['discovered'])
                 case 'vuln_library_count':
-                    csv_line_sum.append('-')
+                    csv_line_sum.append(app['stats']['vulnerables'])
                 case 'library_count':
-                    csv_line_sum.append('-')
+                    csv_line_sum.append(app['stats']['total'])
                 case 'created':
                     created = dt.fromtimestamp(app['created'] / 1000)
                     csv_line_sum.append(created)

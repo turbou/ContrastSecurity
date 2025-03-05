@@ -94,6 +94,13 @@ def main():
         totalCnt = data['count']
         for app in data['applications']:
             print(app['name'])
+            url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
+            r = requests.get(url_libraries_stats, headers=headers)
+            data = r.json()
+            if data['success']:
+                app['stats'] = data['stats']
+            else:
+                app['stats'] = {}
             app_name_dict[app['app_id']] = app['name']
             all_app_dict[app['app_id']] = app
 
@@ -105,6 +112,13 @@ def main():
             data = r.json()
             for app in data['applications']:
                 print(app['name'])
+                url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
+                r = requests.get(url_libraries_stats, headers=headers)
+                data = r.json()
+                if data['success']:
+                    app['stats'] = data['stats']
+                else:
+                    app['stats'] = {}
                 app_name_dict[app['app_id']] = app['name']
                 all_app_dict[app['app_id']] = app
                 orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
