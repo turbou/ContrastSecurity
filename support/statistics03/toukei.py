@@ -10,61 +10,7 @@ from dateutil.relativedelta import relativedelta
 
 from pathlib import Path
 
-import requests
 import yaml
-
-ORG_APPLICATIONS_LIMIT = 100
-ORG_TRACES_LIMIT = 100
-ORG_LIBRARIES_LIMIT = 50
-
-CSV_HEADER_SUMMARY = [
-    'アプリケーション名',
-    '総合スコア',
-    'カスタムコードのスコア',
-    'ライブラリのスコア',
-    'ルート疎通率',
-    '今までの検出されたすべての脆弱性数（総数）',
-    '新規検出脆弱性数(重大)',
-    '新規検出脆弱性数(高)',
-    '新規検出脆弱性数(中)',
-    '新規検出脆弱性数(低)',
-    '新規検出脆弱性数(注意)',
-    '残存脆弱性数(重大)',
-    '残存脆弱性数(高)',
-    '残存脆弱性数(中)',
-    '残存脆弱性数(低)',
-    '残存脆弱性数(注意)',
-    '修正済脆弱性数(重大)',
-    '修正済脆弱性数(高)',
-    '修正済脆弱性数(中)',
-    '修正済脆弱性数(低)',
-    '修正済脆弱性数(注意)',
-    '削除済脆弱性数(重大)',
-    '削除済脆弱性数(高)',
-    '削除済脆弱性数(中)',
-    '削除済脆弱性数(低)',
-    '削除済脆弱性数(注意)',
-]
-
-CSV_HEADER_VUL = [
-    'アプリケーション名',
-    '深刻度',
-    '脆弱性',
-    'ステータス',
-    '検出URL',
-    'アクティビティ(変更内容)',
-    'アクティビティ(変更者)',
-]
-
-CSV_HEADER_LIB = [
-    'アプリケーション名',
-    'スコア',
-    'ライブラリ名',
-    '脆弱性',
-    'ステータス',
-    '利用バージョン',
-    '最新バージョン',
-]
 
 OUTPUT_CONFIG = {
     "sum": [
@@ -138,7 +84,6 @@ def main():
         add_help=True,  # -h/–help オプションの追加
     )
     parser.add_argument('--dir', default='./', help='解析対象のディレクトリ')
-    parser.add_argument('--app_filter', help='アプリケーション名フィルタ(例: PetClinic(デバッグ用))')
     parser.add_argument('--last_month', action='store_true', help='先月分の解析')
     parser.add_argument('--this_month', action='store_true', help='今月分の解析')
     parser.add_argument('--date_range', help='解析期間（YYYYMMDD-YYYYMMDD）')
@@ -202,6 +147,8 @@ def main():
     if os.path.exists(output_yaml_path):
         with open(output_yaml_path, 'r') as file:
             output_settings = yaml.safe_load(file)
+    else:
+        output_settings = OUTPUT_CONFIG
 
     applications_dict = {}
     orgtraces_dict = {}

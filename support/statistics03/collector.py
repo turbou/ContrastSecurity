@@ -6,7 +6,6 @@ import os
 import sys
 
 import requests
-import yaml
 
 ORG_APPLICATIONS_LIMIT = 100
 ORG_TRACES_LIMIT = 100

@@ -1,25 +1,28 @@
 # ContrastのAPIを使った統計のサンプル1
 
+## 前提条件
+Python3.10のmatch文を使っているので、Python3.10以上の動作環境が必要となります。
+
 ## 環境準備
 Python3はWindowsまたはMacにインストール済みの前提です。  
 3.13.1で動作確認をしています。
 - 仮想環境作成
 
 ```cmd
-python3 -m venv sample_venv
+python3 -m venv .sample_venv
 ```
 - アクティベート
 
 Windows  
 
 ```cmd
-.\sample_venv\Scripts\activate
+.\.sample_venv\Scripts\activate
 ```
 
 Mac  
 
 ```bash
-source ./sample_venv/bin/activate
+source ./.sample_venv/bin/activate
 ```
 
 - 必要なパッケージをインストール
