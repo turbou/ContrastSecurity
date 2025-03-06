@@ -79,7 +79,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog='collector.py',  # プログラム名
         usage='python collector.py',  # プログラムの利用方法
-        description='引数なしで実行すると、すべての情報（アプリケーション、脆弱性、ライブラリ）を取得します。',  # 引数のヘルプの前に表示
+        description='--last_month, --this_month, --date_rangeのいずれかの指定が必須です。',  # 引数のヘルプの前に表示
         epilog='end',  # 引数のヘルプの後で表示
         add_help=True,  # -h/–help オプションの追加
     )
