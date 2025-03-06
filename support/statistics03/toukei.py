@@ -151,10 +151,8 @@ def main():
         output_settings = OUTPUT_CONFIG
 
     applications_dict = {}
-    orgtraces_dict = {}
-    libraries_dict = {}
-    removed_apps = []
-
+    # removed_apps = []
+    application_histories = []
     for child in toukei_path.iterdir():
         if child.is_dir():
             match_flg = False
@@ -165,6 +163,41 @@ def main():
             if match_flg:
                 print(child.name)
                 applications_json = os.path.join(child, "applications.json")
+                try:
+                    # Applications
+                    with open(applications_json, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        this_applications = []
+                        for app_id, app in data.items():
+                            this_applications.append(app_id)
+                            applications_dict[app_id] = app
+                        application_histories.append(this_applications)
+
+                except FileNotFoundError:
+                    print(f"エラー: ファイル '{file_path}' が見つかりません。")
+                except json.JSONDecodeError:
+                    print(f"エラー: ファイル '{file_path}' は有効なJSONではありません。")
+
+    application_set = set()
+    for apps in application_histories[:-1]:
+        for app_id in apps:
+            application_set.add(app_id)
+    print(list(application_set))
+    print(application_histories[-1])
+    removed_apps = list(application_set - set(application_histories[-1]))
+    print(removed_apps)
+
+    orgtraces_dict = {}
+    libraries_dict = {}
+    for child in toukei_path.iterdir():
+        if child.is_dir():
+            match_flg = False
+            for pattern in patterns:
+                match = re.match(pattern, child.name)
+                if bool(match):
+                    match_flg |= True
+            if match_flg:
+                # print(child.name)
                 orgtraces_json = os.path.join(child, "orgtraces.json")
                 libraries_json = os.path.join(child, "libraries.json")
                 try:
