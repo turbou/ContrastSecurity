@@ -145,7 +145,7 @@ def main():
     this_script_dir = os.path.dirname(os.path.abspath(__file__))
     output_yaml_path = os.path.join(this_script_dir, 'output.yaml')
     if os.path.exists(output_yaml_path):
-        with open(output_yaml_path, 'r') as file:
+        with open(output_yaml_path, 'r', encoding="utf-8") as file:
             output_settings = yaml.safe_load(file)
     else:
         output_settings = OUTPUT_CONFIG
