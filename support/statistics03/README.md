@@ -181,7 +181,9 @@ statistics03
 └─Sum
         CA_Summary_20250213.csv
 ```
-#### 出力項目のカスタマイズについて
+
+## その他
+### 出力項目のカスタマイズについて
 output.yamlを変更することで以下の出力方法を変更することができます。
 - 出力項目のon/off
 - 出力項目の並び
@@ -195,11 +197,11 @@ python toukei.py --output_template
 これによって、`output.yaml.template` が出力されます。
 内容を変更することで、csvの出力内容を変更することができます。
 
-#### collector.pyの定期実行について
-##### Windows
+### collector.pyの定期実行について
+#### Windows
 `collector.bat`内のパスを適宜修正し、Windowsのタスクスケジューラにこのbatファイルを設定してください。
 
-##### MacOS
+#### MacOS
 cronを使って定期実行する例は以下となります。  
 
 ```bash
