@@ -209,7 +209,7 @@ crontab -e
 ```
 
 以下は5分おきに実行する例となります。  
-cronのログは以下のようにリダイレクトを使うほうが簡単に確認としてオススメです。
+cronのログは以下のようにリダイレクトを使うほうが簡単な確認方法としてオススメです。
 
 ```properties
 CONTRAST_BASEURL=https://app.contrastsecurity.com/Contrast
