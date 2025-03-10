@@ -4,7 +4,7 @@
 Python3.10のmatch文を使っているので、Python3.10以上の動作環境が必要となります。
 
 ## 環境準備
-Python3はWindowsまたはMacにインストール済みの前提です。  
+Python3はWindowsまたはMacOSにインストール済みの前提です。  
 3.13.1で動作確認をしています。
 - 仮想環境作成
 
@@ -194,6 +194,28 @@ python toukei.py --output_template
 ```
 これによって、`output.yaml.template` が出力されます。
 内容を変更することで、csvの出力内容を変更することができます。
+
+#### collector.pyの定期実行について
+##### Windows
+`collector.bat`内のパスを適宜修正し、Windowsのタスクスケジューラにこのbatファイルを設定してください。
+
+##### MacOS
+cronを使って定期実行する例は以下となります。  
+
+```bash
+crontab -e
+```
+
+以下は5分おきに実行する例となります。  
+cronのログは以下のようにリダイレクトを使うほうが簡単に確認としてオススメです。
+
+```properties
+CONTRAST_BASEURL=https://app.contrastsecurity.com/Contrast
+CONTRAST_AUTHORIZATION=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX==
+CONTRAST_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+CONTRAST_ORG_ID=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+*/5 * * * * /bin/bash -c "source /Users/hoge/git/ContrastSecurity/support/statistics03/.sample_venv/bin/activate && python /Users/hoge/git/ContrastSecurity/support/statistics03/collector.py --app_filter PetClinic_8001_Taka >> /Users/hoge/git/ContrastSecurity/support/statistics03/cron.log 2>&1"
+```
 
 以上
 
