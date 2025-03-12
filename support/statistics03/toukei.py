@@ -95,20 +95,6 @@ def main():
             yaml.dump(OUTPUT_CONFIG, f, allow_unicode=True, indent=2)
         return
 
-    env_not_found = False
-    for env_key in ['CONTRAST_BASEURL', 'CONTRAST_AUTHORIZATION', 'CONTRAST_API_KEY', 'CONTRAST_ORG_ID']:
-        if not env_key in os.environ:
-            print('Environment variable %s is not set' % env_key)
-            env_not_found |= True
-    if env_not_found:
-        print()
-        print('CONTRAST_BASEURL                   : https://app.contrastsecurity.com/Contrast')
-        print('CONTRAST_AUTHORIZATION             : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX==')
-        print('CONTRAST_API_KEY                   : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-        print('CONTRAST_ORG_ID                    : XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX')
-        print()
-        return
-
     now = dt.now()
     new_threshold_datetime = None
     patterns = []
@@ -133,6 +119,12 @@ def main():
             patterns.append(r"^%s\d{4}$" % date_string)
     if len(patterns) == 0:
         patterns.append(r"^\d{12}$")
+
+    if new_threshold_datetime is None:
+        print()
+        print(f"--last_month, --this_month, --date_rangeのいずれかの引数が設定されていません。")
+        print()
+        return
     print(f'New Threshold Date: {new_threshold_datetime}')
 
     # toukei_base_dir = os.path.dirname(__file__)
@@ -496,3 +488,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

@@ -33,14 +33,14 @@ def main():
     env_not_found = False
     for env_key in ['CONTRAST_BASEURL', 'CONTRAST_AUTHORIZATION', 'CONTRAST_API_KEY', 'CONTRAST_ORG_ID']:
         if not env_key in os.environ:
-            print('Environment variable %s is not set' % env_key)
+            print(f"環境変数'{env_key}'が設定されていません。")
             env_not_found |= True
     if env_not_found:
         print()
-        print('CONTRAST_BASEURL                   : https://app.contrastsecurity.com/Contrast')
-        print('CONTRAST_AUTHORIZATION             : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX==')
-        print('CONTRAST_API_KEY                   : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-        print('CONTRAST_ORG_ID                    : XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX')
+        print('CONTRAST_BASEURL       : https://app.contrastsecurity.com/Contrast')
+        print('CONTRAST_AUTHORIZATION : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX==')
+        print('CONTRAST_API_KEY       : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+        print('CONTRAST_ORG_ID        : XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX')
         print()
         return
 
