@@ -121,6 +121,50 @@ def main():
                 app_name_dict[app['app_id']] = app['name']
                 all_app_dict[app['app_id']] = app
                 orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
+                
+        print('Applications(Archived) Loading...')
+        payload = '{"quickFilter":"%s","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[]}' % (
+            'ARCHIVED'
+            )
+        if args.app_filter:
+            payload = '{"quickFilter":"%s","filterTechs":[],"filterLanguages":[],"filterTags":[],"scoreLetterGrades":[],"filterServers":[],"filterCompliance":[],"filterVulnSeverities":[],"environment":[],"appImportances":[],"metadataFilters":[], "filterText":"%s"}' % (
+                'ARCHIVED',
+                args.app_filter
+                )
+        r = requests.post(url_applications, headers=headers, data=payload)
+        data = r.json()
+        totalCnt = data['count']
+        for app in data['applications']:
+            print(app['name'])
+            url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
+            r = requests.get(url_libraries_stats, headers=headers)
+            data = r.json()
+            if data['success']:
+                app['stats'] = data['stats']
+            else:
+                app['stats'] = {}
+            app_name_dict[app['app_id']] = app['name']
+            all_app_dict[app['app_id']] = app
+
+        orgApplicationsIncompleteFlg = True
+        orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
+        while orgApplicationsIncompleteFlg:
+            url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_app_dict), ORG_APPLICATIONS_LIMIT)
+            r = requests.post(url_applications, headers=headers, data=payload)
+            data = r.json()
+            for app in data['applications']:
+                print(app['name'])
+                url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
+                r = requests.get(url_libraries_stats, headers=headers)
+                data = r.json()
+                if data['success']:
+                    app['stats'] = data['stats']
+                else:
+                    app['stats'] = {}
+                app_name_dict[app['app_id']] = app['name']
+                all_app_dict[app['app_id']] = app
+                orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
+
         print('Total(Applications): ', len(all_app_dict))
         print('')
 

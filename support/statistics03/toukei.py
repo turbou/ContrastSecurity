@@ -145,7 +145,8 @@ def main():
     applications_dict = {}
     # removed_apps = []
     application_histories = []
-    for child in toukei_path.iterdir():
+    archived_application_dict = {}
+    for child in sorted(toukei_path.iterdir()):
         if child.is_dir():
             match_flg = False
             for pattern in patterns:
@@ -163,6 +164,7 @@ def main():
                         for app_id, app in data.items():
                             this_applications.append(app_id)
                             applications_dict[app_id] = app
+                            archived_application_dict[app_id] = app['archived']
                         application_histories.append(this_applications)
 
                 except FileNotFoundError:
@@ -170,18 +172,16 @@ def main():
                 except json.JSONDecodeError:
                     print(f"エラー: ファイル '{file_path}' は有効なJSONではありません。")
 
+    # アプリケーションが削除されたかどうか
     application_set = set()
     for apps in application_histories[:-1]:
         for app_id in apps:
             application_set.add(app_id)
-    print(list(application_set))
-    print(application_histories[-1])
     removed_apps = list(application_set - set(application_histories[-1]))
-    print(removed_apps)
 
     orgtraces_dict = {}
     libraries_dict = {}
-    for child in toukei_path.iterdir():
+    for child in sorted(toukei_path.iterdir()):
         if child.is_dir():
             match_flg = False
             for pattern in patterns:
@@ -413,7 +413,8 @@ def main():
                     created = dt.fromtimestamp(app['created'] / 1000)
                     csv_line_sum.append(created)
                 case 'archived':
-                    csv_line_sum.append(app['archived'])
+                    archived = archived_application_dict.get(app['app_id'], False)
+                    csv_line_sum.append(archived)
                 case 'removed':
                     csv_line_sum.append(app['app_id'] in removed_apps)
                 case 'vul_total':
