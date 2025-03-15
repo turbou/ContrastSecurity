@@ -228,6 +228,8 @@ def main():
                         for trace_uuid, trace in data.items():
                             if trace_uuid in orgtraces_dict:
                                 cur_trace = orgtraces_dict[trace_uuid]
+                                cur_trace['status'] = trace['status']
+                                cur_trace['lastDetected'] = trace['lastDetected']
                                 if len(trace['notes']) > 0:
                                     add_notes = []
                                     for note in trace['notes']:
@@ -359,7 +361,7 @@ def main():
                 csv_lines_vul.append(csv_line)
                 # Count
                 first_detected = dt.fromtimestamp(trace['firstDetected'] / 1000)
-                if trace['status'] == 'Fixed':
+                if trace['status'] in ['Fixed', 'Remediated']:
                     count_map[f"fixed_{trace['severity'].lower()}"].append(trace['uuid'])
                 elif trace['status'] == 'Removed':
                     count_map[f"removed_{trace['severity'].lower()}"].append(trace['uuid'])
@@ -406,15 +408,24 @@ def main():
                 case 'route_discovered':
                     csv_line_sum.append(app['routes']['discovered'])
                 case 'vuln_library_count':
-                    csv_line_sum.append(app['stats']['vulnerables'])
+                    if 'vulnerables' in app['stats']:
+                        csv_line_sum.append(app['stats']['vulnerables'])
+                    else:
+                        csv_line_sum.append('0')
                 case 'library_count':
-                    csv_line_sum.append(app['stats']['total'])
+                    if 'total' in app['stats']:
+                        csv_line_sum.append(app['stats']['total'])
+                    else:
+                        csv_line_sum.append('0')
                 case 'created':
                     created = dt.fromtimestamp(app['created'] / 1000)
                     csv_line_sum.append(created)
                 case 'archived':
-                    archived = archived_application_dict.get(app['app_id'], False)
-                    csv_line_sum.append(archived)
+                    if app['app_id'] in removed_apps:
+                        csv_line_sum.append(False)
+                    else:
+                        archived = archived_application_dict.get(app['app_id'], False)
+                        csv_line_sum.append(archived)
                 case 'removed':
                     csv_line_sum.append(app['app_id'] in removed_apps)
                 case 'vul_total':
