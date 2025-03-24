@@ -44,6 +44,11 @@ def main():
         print()
         return
 
+    proxies = {}
+    if 'CONTRAST_PROXY' in os.environ:
+        proxies['http'] = os.environ['CONTRAST_PROXY']
+        proxies['https'] = os.environ['CONTRAST_PROXY']
+
     if not (args.app or args.vul or args.lib):
         args.app = args.vul = args.lib = True
 
@@ -88,13 +93,13 @@ def main():
                 'LICENSED' if args.licensed else 'ALL',
                 args.app_filter
                 )
-        r = requests.post(url_applications, headers=headers, data=payload)
+        r = requests.post(url_applications, headers=headers, data=payload, proxies=proxies)
         data = r.json()
         totalCnt = data['count']
         for app in data['applications']:
             print(app['name'])
             url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
-            r = requests.get(url_libraries_stats, headers=headers)
+            r = requests.get(url_libraries_stats, headers=headers, proxies=proxies)
             data = r.json()
             if data['success']:
                 app['stats'] = data['stats']
@@ -107,12 +112,12 @@ def main():
         orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
         while orgApplicationsIncompleteFlg:
             url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_app_dict), ORG_APPLICATIONS_LIMIT)
-            r = requests.post(url_applications, headers=headers, data=payload)
+            r = requests.post(url_applications, headers=headers, data=payload, proxies=proxies)
             data = r.json()
             for app in data['applications']:
                 print(app['name'])
                 url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
-                r = requests.get(url_libraries_stats, headers=headers)
+                r = requests.get(url_libraries_stats, headers=headers, proxies=proxies)
                 data = r.json()
                 if data['success']:
                     app['stats'] = data['stats']
@@ -131,13 +136,13 @@ def main():
                 'ARCHIVED',
                 args.app_filter
                 )
-        r = requests.post(url_applications, headers=headers, data=payload)
+        r = requests.post(url_applications, headers=headers, data=payload, proxies=proxies)
         data = r.json()
         totalCnt = data['count']
         for app in data['applications']:
             print(app['name'])
             url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
-            r = requests.get(url_libraries_stats, headers=headers)
+            r = requests.get(url_libraries_stats, headers=headers, proxies=proxies)
             data = r.json()
             if data['success']:
                 app['stats'] = data['stats']
@@ -150,12 +155,12 @@ def main():
         orgApplicationsIncompleteFlg = totalCnt > len(all_app_dict)
         while orgApplicationsIncompleteFlg:
             url_applications = '%s/%s/applications/filter?offset=%d&limit=%d&expand=scores,coverage,skip_links' % (API_URL, ORG_ID, len(all_app_dict), ORG_APPLICATIONS_LIMIT)
-            r = requests.post(url_applications, headers=headers, data=payload)
+            r = requests.post(url_applications, headers=headers, data=payload, proxies=proxies)
             data = r.json()
             for app in data['applications']:
                 print(app['name'])
                 url_libraries_stats = '%s/%s/applications/%s/libraries/stats?expand=skip_links' % (API_URL, ORG_ID, app['app_id'])
-                r = requests.get(url_libraries_stats, headers=headers)
+                r = requests.get(url_libraries_stats, headers=headers, proxies=proxies)
                 data = r.json()
                 if data['success']:
                     app['stats'] = data['stats']
@@ -191,14 +196,14 @@ def main():
                 'OPEN' if args.vul_open else 'ALL',
                 ','.join(modules)
                 )
-        r = requests.post(url_orgtraces, headers=headers, data=payload)
+        r = requests.post(url_orgtraces, headers=headers, data=payload, proxies=proxies)
         data = r.json()
         totalCnt = data['count']
         for vuln in data['items']:
             print(vuln['vulnerability']['uuid'])
             # Activity
             url_notes = '%s/%s/applications/%s/traces/%s/notes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
-            r = requests.get(url_notes, headers=headers)
+            r = requests.get(url_notes, headers=headers, proxies=proxies)
             data = r.json()
             if data['success']:
                 vuln['vulnerability']['notes'] = data['notes']
@@ -206,7 +211,7 @@ def main():
                 vuln['vulnerability']['notes'] = []
             # Route
             url_routes = '%s/%s/traces/%s/trace/%s/routes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
-            r = requests.get(url_routes, headers=headers)
+            r = requests.get(url_routes, headers=headers, proxies=proxies)
             data = r.json()
             if data['success']:
                 vuln['vulnerability']['routes'] = data['routes']
@@ -219,13 +224,13 @@ def main():
         orgTracesIncompleteFlg = totalCnt > len(orgtraces_dict)
         while orgTracesIncompleteFlg:
             url_orgtraces = '%s/organizations/%s/orgtraces/ui?expand=application&offset=%d&limit=%d' % (API_URL, ORG_ID, len(orgtraces_dict), ORG_TRACES_LIMIT)
-            r = requests.post(url_orgtraces, headers=headers, data=payload)
+            r = requests.post(url_orgtraces, headers=headers, data=payload, proxies=proxies)
             data = r.json()
             for vuln in data['items']:
                 print(vuln['vulnerability']['uuid'])
                 # Activity
                 url_notes = '%s/%s/applications/%s/traces/%s/notes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
-                r = requests.get(url_notes, headers=headers)
+                r = requests.get(url_notes, headers=headers, proxies=proxies)
                 data = r.json()
                 if data['success']:
                     vuln['vulnerability']['notes'] = data['notes']
@@ -233,7 +238,7 @@ def main():
                     vuln['vulnerability']['notes'] = []
                 # Route
                 url_routes = '%s/%s/traces/%s/trace/%s/routes?expand=skip_links' % (API_URL, ORG_ID, vuln['vulnerability']['application']['id'], vuln['vulnerability']['uuid'])
-                r = requests.get(url_routes, headers=headers)
+                r = requests.get(url_routes, headers=headers, proxies=proxies)
                 data = r.json()
                 if data['success']:
                     vuln['vulnerability']['routes'] = data['routes']
@@ -263,7 +268,7 @@ def main():
                 'VULNERABLE' if args.lib_vuln else 'ALL',
                 module_id
                 )
-            r = requests.post(url_libraries, headers=headers, data=payload)
+            r = requests.post(url_libraries, headers=headers, data=payload, proxies=proxies)
             data = r.json()
             print(data['success'])
             print(data['messages'])
@@ -277,7 +282,7 @@ def main():
             orgLibrariesIncompleteFlg = totalCnt > len(all_libraries_by_app)
             while orgLibrariesIncompleteFlg:
                 url_libraries = '%s/%s/libraries/filter?expand=skip_links,apps,status,vulns&offset=%d&limit=%d&sort=score' % (API_URL, ORG_ID, len(all_libraries_by_app), ORG_LIBRARIES_LIMIT)
-                r = requests.post(url_libraries, headers=headers, data=payload)
+                r = requests.post(url_libraries, headers=headers, data=payload, proxies=proxies)
                 data = r.json()
                 for lib in data['libraries']:
                     print(lib['file_name'])
