@@ -40,6 +40,10 @@ pip install -r requirements.txt
 
 *いずれもTeamServerのユーザーメニューから取得可能です。*
 
+**認証プロキシなどを経由させる場合は下の環境変数も設定してください。**
+- CONTRAST_PROXY  
+  例）http://username:password@192.168.100.20:3128
+
 ## 動作について
 - 定期的にデータを取得・蓄積  
   collector.pyを実行します。  
