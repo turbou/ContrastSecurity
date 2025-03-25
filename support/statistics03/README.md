@@ -74,6 +74,7 @@ options:
   --lib_vuln            脆弱性を含むライブラリの情報のみ取得
   --app_filter APP_FILTER
                         アプリケーション名フィルタ(例: PetClinic(デバッグ用))
+  --ssl_verify_skip     SSL検証回避を有効にします。
 ```
 #### 通常の実行方法
 - 全量を取得する場合（通常の使用方法）  
