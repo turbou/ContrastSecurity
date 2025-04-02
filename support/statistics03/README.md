@@ -127,6 +127,7 @@ usage: python collector.py
 options:
   -h, --help            show this help message and exit
   --dir DIR             解析対象のディレクトリ
+  --sjis                結果をShift-JISで出力します。デフォルトはUTF-8です。
   --last_month          先月分の解析
   --this_month          今月分の解析
   --date_range DATE_RANGE
