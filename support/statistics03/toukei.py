@@ -84,6 +84,7 @@ def main():
         add_help=True,  # -h/–help オプションの追加
     )
     parser.add_argument('--dir', default='./', help='解析対象のディレクトリ')
+    parser.add_argument('--sjis', action='store_true', help='結果をShift-JISで出力します。デフォルトはUTF-8です。')
     parser.add_argument('--last_month', action='store_true', help='先月分の解析')
     parser.add_argument('--this_month', action='store_true', help='今月分の解析')
     parser.add_argument('--date_range', help='解析期間（YYYYMMDD-YYYYMMDD）')
@@ -94,6 +95,10 @@ def main():
         with open("output.yaml.template", "w", encoding="utf-8") as f:
             yaml.dump(OUTPUT_CONFIG, f, allow_unicode=True, indent=2)
         return
+    
+    csv_encoding = 'utf-8'
+    if args.sjis:
+        csv_encoding = 'shift_jis'
 
     now = dt.now()
     new_threshold_datetime = None
@@ -147,7 +152,7 @@ def main():
     application_histories = []
     archived_application_dict = {}
     for child in sorted(toukei_path.iterdir()):
-        if child.is_dir():
+        if child.is_dir() and len(os.listdir(child)) > 0:
             match_flg = False
             for pattern in patterns:
                 match = re.match(pattern, child.name)
@@ -166,11 +171,8 @@ def main():
                             applications_dict[app_id] = app
                             archived_application_dict[app_id] = app['archived']
                         application_histories.append(this_applications)
-
-                except FileNotFoundError:
-                    print(f"エラー: ファイル '{file_path}' が見つかりません。")
-                except json.JSONDecodeError:
-                    print(f"エラー: ファイル '{file_path}' は有効なJSONではありません。")
+                except (FileNotFoundError, json.JSONDecodeError) as e:
+                    print(f"エラー: ファイル '{applications_json}' が見つからない、または内容に問題があるためスキップします。")
 
     # アプリケーションが削除されたかどうか
     application_set = set()
@@ -182,7 +184,7 @@ def main():
     orgtraces_dict = {}
     libraries_dict = {}
     for child in sorted(toukei_path.iterdir()):
-        if child.is_dir():
+        if child.is_dir() and len(os.listdir(child)) > 0:
             match_flg = False
             for pattern in patterns:
                 match = re.match(pattern, child.name)
@@ -192,70 +194,79 @@ def main():
                 # print(child.name)
                 orgtraces_json = os.path.join(child, "orgtraces.json")
                 libraries_json = os.path.join(child, "libraries.json")
+                applications_json = os.path.join(child, "applications.json")
                 try:
-                    # Applications
-                    with open(applications_json, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        # 削除されたかチェック
-                        for org_app_id, org_app in applications_dict.items():
-                            exist_app_flg = False
+                    try:
+                        # Applications
+                        with open(applications_json, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            # 削除されたかチェック
+                            for org_app_id, org_app in applications_dict.items():
+                                exist_app_flg = False
+                                for app_id, app in data.items():
+                                    if org_app_id == app_id:
+                                        exist_app_flg |= True
+                                if not exist_app_flg:
+                                    # org_app['removed'] = True
+                                    removed_apps.append(org_app_id)
+                                # else:
+                                #     org_app['removed'] = False
+    
                             for app_id, app in data.items():
-                                if org_app_id == app_id:
-                                    exist_app_flg |= True
-                            if not exist_app_flg:
-                                # org_app['removed'] = True
-                                removed_apps.append(org_app_id)
-                            # else:
-                            #     org_app['removed'] = False
-
-                        for app_id, app in data.items():
-                            applications_dict[app_id] = app
+                                applications_dict[app_id] = app
+                    except (FileNotFoundError, json.JSONDecodeError) as e:
+                        print(f"エラー: ファイル '{applications_json}' が見つからない、または内容に問題があるためスキップします。")
 
                     # OrgTraces
                     removed_traces = []
-                    with open(orgtraces_json, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        # 削除されたかチェック
-                        for org_trace_uuid, org_trace in orgtraces_dict.items():
-                            exist_trace_flg = False
+                    try:
+                        with open(orgtraces_json, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            # 削除されたかチェック
+                            for org_trace_uuid, org_trace in orgtraces_dict.items():
+                                exist_trace_flg = False
+                                for trace_uuid, trace in data.items():
+                                    if org_trace_uuid == trace_uuid:
+                                        exist_trace_flg |= True
+                                if not exist_trace_flg and not org_trace['application']['id'] in removed_apps:  # アプリが削除してしまった場合を考慮
+                                    org_trace['status'] = 'Removed'
+                                    removed_traces.append(org_trace_uuid)
+                            
                             for trace_uuid, trace in data.items():
-                                if org_trace_uuid == trace_uuid:
-                                    exist_trace_flg |= True
-                            if not exist_trace_flg and not org_trace['application']['id'] in removed_apps:  # アプリが削除してしまった場合を考慮
-                                org_trace['status'] = 'Removed'
-                                removed_traces.append(org_trace_uuid)
-                        
-                        for trace_uuid, trace in data.items():
-                            if trace_uuid in orgtraces_dict:
-                                cur_trace = orgtraces_dict[trace_uuid]
-                                cur_trace['status'] = trace['status']
-                                cur_trace['lastDetected'] = trace['lastDetected']
-                                if len(trace['notes']) > 0:
-                                    add_notes = []
-                                    for note in trace['notes']:
-                                        known_note = False
-                                        for cur_note in cur_trace['notes']:
-                                            if note['id'] == cur_note['id']:
-                                                known_note |= True
-                                        if not known_note:
-                                            add_notes.append(note)
-                                    cur_trace['notes'].extend(add_notes)
-                            else:
-                                orgtraces_dict[trace_uuid] = trace
+                                if trace_uuid in orgtraces_dict:
+                                    cur_trace = orgtraces_dict[trace_uuid]
+                                    cur_trace['status'] = trace['status']
+                                    cur_trace['lastDetected'] = trace['lastDetected']
+                                    if len(trace['notes']) > 0:
+                                        add_notes = []
+                                        for note in trace['notes']:
+                                            known_note = False
+                                            for cur_note in cur_trace['notes']:
+                                                if note['id'] == cur_note['id']:
+                                                    known_note |= True
+                                            if not known_note:
+                                                add_notes.append(note)
+                                        cur_trace['notes'].extend(add_notes)
+                                else:
+                                    orgtraces_dict[trace_uuid] = trace
+                    except (FileNotFoundError, json.JSONDecodeError) as e:
+                        print(f"エラー: ファイル '{orgtraces_json}' が見つからない、または内容に問題があるためスキップします。")
 
                     # Libraries
-                    with open(libraries_json, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        for app_id, library in data.items():
-                            if app_id in libraries_dict:
-                                cur_library = libraries_dict[app_id]
-                            else:
-                                libraries_dict[app_id] = library
+                    try:
+                        with open(libraries_json, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            for app_id, library in data.items():
+                                if app_id in libraries_dict:
+                                    cur_library = libraries_dict[app_id]
+                                else:
+                                    libraries_dict[app_id] = library
+                    except (FileNotFoundError, json.JSONDecodeError) as e:
+                        print(f"エラー: ファイル '{libraries_json}' が見つからない、または内容に問題があるためスキップします。")
 
-                except FileNotFoundError:
-                    print(f"エラー: ファイル '{file_path}' が見つかりません。")
-                except json.JSONDecodeError:
-                    print(f"エラー: ファイル '{file_path}' は有効なJSONではありません。")
+                except Exception as e:
+                    print(f"予期せぬエラーが発生しました: {e}")
+
     # print(applications_dict)
     # print(orgtraces_dict)
     json_path = os.path.join(".", "check.json")
@@ -373,7 +384,7 @@ def main():
         if len(csv_lines_vul) > 0:
             try:
                 csv_path = os.path.join(folder_path_ap, 'CA_%s_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
-                with open(csv_path, 'w', encoding='shift_jis') as f:
+                with open(csv_path, 'w', encoding=csv_encoding) as f:
                    writer = csv.writer(f, lineterminator='\n')
                    writer.writerow(csv_vul_headers)
                    writer.writerows(csv_lines_vul)
@@ -436,7 +447,7 @@ def main():
 
     try:
         csv_path_sum = os.path.join(folder_path_sum, 'CA_Summary_%s.csv' % (timestamp_ym))
-        with open(csv_path_sum, 'w', encoding='shift_jis') as f:
+        with open(csv_path_sum, 'w', encoding=csv_encoding) as f:
            writer = csv.writer(f, lineterminator='\n')
            writer.writerow(csv_sum_headers)
            writer.writerows(csv_lines_sum)
@@ -489,7 +500,7 @@ def main():
         if len(csv_lines_lib) > 0:
             try:
                 csv_path = os.path.join(folder_path_lib, 'CA_%s_Library_%s.csv' % (app['name'].replace('/', '_'), timestamp_ym))
-                with open(csv_path, 'w', encoding='shift_jis') as f:
+                with open(csv_path, 'w', encoding=csv_encoding) as f:
                    writer = csv.writer(f, lineterminator='\n')
                    writer.writerow(csv_lib_headers)
                    writer.writerows(csv_lines_lib)
