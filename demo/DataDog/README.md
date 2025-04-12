@@ -58,3 +58,4 @@ pathの値はContrastエージェントログの出力先に合わせて変更�
 ## DataDogのログ収集の準備
 ### まずはログが流れているかを確認
 Logs - Explorer で以下のような感じで確認
+![Test Image 1](png/log_explorer.jpeg)
