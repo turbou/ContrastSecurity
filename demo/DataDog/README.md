@@ -85,3 +85,9 @@ Logs - Pipelines で以下のような感じで作成
   ContrastSecurityProtectLogRule %{data:data}pri=%{data:pri} src=%{ip:src} spt=%{number:spt} request=%{data:request} requestMethod=%{word:requestMethod} app=%{data:app} outcome=%{word:outcome}
   ```
   Log Samplesのところで MATCH とならない場合は、parsing ruleの末尾に改行を入れたり消したりでうまくいきます。
+
+作ったパイプラインのとおりにログが構造化されてるかは以下のとおり
+![Test Image 1](png/pipeline_result.jpeg)
+
+適当なログをクリックすると、構造化されているかが確認できます。
+![Test Image 1](png/pipeline_check.jpeg)
