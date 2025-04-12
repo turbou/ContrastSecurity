@@ -103,5 +103,19 @@ JSONを貼り付けるところに、[結果用json](./円グラフ/Result.json)
 
 同じような手順でパイチャートを作成し、JSONのところに、[ルール用json](./円グラフ/Pri.json) を貼り付けると、検知ルールのパイチャートウィジェットが作成できます。
 
+## Niktoを使って、WebGoatに攻撃っぽいことをする
+クローン済みのniktoディレクトリでDockerビルド
+```bash
+docker build -t sullo/nikto .
+```
+実行
+```bash
+docker run --rm sullo/nikto -h http://host.docker.internal:8080/WebGoat
+```
+Dockerデスクトップの場合は、-hのホストはhost.docker.internalで良いようですが、Linuxとかの場合はホストのIPアドレスを指定します。
+
+## 結果確認
+DataDogの作成したダッシュボードの円グラフを確認してみてください。
+
 以上
 
