@@ -59,3 +59,13 @@ pathの値はContrastエージェントログの出力先に合わせて変更�
 ### まずはログが流れているかを確認
 Logs - Explorer で以下のような感じで確認
 ![Test Image 1](png/log_explorer.jpeg)
+
+対象のログを出すには
+- スクリーンショットのようにホストで絞り込む
+- 上のほうの期間を1dとかにしてみる
+などしてみてください。
+
+### パイプラインを作る
+Logs - Pipelines で以下のような感じで作成
+![Test Image 1](png/pipeline_create.jpeg)
+
