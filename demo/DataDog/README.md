@@ -35,3 +35,8 @@ logs:
     source: java
 ```
 pathの値はContrastエージェントログの出力先に合わせて変更してください。
+
+## WebGoatの起動
+### JavaエージェントのDL
+適当な場所にダウンロードしてください。
+
