@@ -99,6 +99,7 @@ Logs - Pipelines で以下のような感じで作成
 ダッシュボードができたら、ウィジェットを追加でパイチャートを選択します。
 ![Test Image 1](png/add_widget.jpeg)
 JSONを貼り付けるところに、[結果用json](./円グラフ/Result.json) の内容ですべて書き換える。
+![Test Image 1](png/piechart_json.jpeg)
 
 同じような手順でパイチャートを作成し、JSONのところに、[ルール用json](./円グラフ/Pri.json) を貼り付けると、検知ルールのパイチャートウィジェットが作成できます。
 
