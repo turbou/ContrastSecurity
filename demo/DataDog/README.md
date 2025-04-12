@@ -34,9 +34,27 @@ logs:
     service: contrast
     source: java
 ```
-pathの値はContrastエージェントログの出力先に合わせて変更してください。
+pathの値はContrastエージェントログの出力先に合わせて変更してください。  
+念のため、DataDogメニューから Open Web UI で設定が反映されていることを確認してください。
 
 ## WebGoatの起動
 ### JavaエージェントのDL
 適当な場所にダウンロードしてください。
+### startup_webgoat.shの書き換え
+- CONTRAST__API__TOKENの値を設定してください。
+- Javaエージェントのパスを設定してください。
+- contrast.agent.contrast_working_dirのフォルダ名またはパスを設定してください。
+- webgoatのjarのパスを設定してください。
+### WebGoatを起動する
+```bash
+./startup_webgoat.sh
+```
+### 起動とオンボード確認
+- http://localhost:8080/WebGoat に接続して確認
+- TeamServerにアプリとサーバがオンボードされていることを確認
+  Protectのライセンスが付与されていることも確認
+- security.logが指定の場所に出力されていることも確認
 
+## DataDogのログ収集の準備
+### まずはログが流れているかを確認
+Logs - Explorer で以下のような感じで確認
