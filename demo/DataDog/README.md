@@ -69,3 +69,19 @@ Logs - Explorer で以下のような感じで確認
 Logs - Pipelines で以下のような感じで作成
 ![Test Image 1](png/pipeline_create.jpeg)
 
+作ったパイプラインにプロセッサーを追加する。
+![Test Image 1](png/add_processor.jpeg)
+
+スクリーンショットの感じでプロセッサーを作成する。
+![Test Image 1](png/processor.jpeg)
+- typeは Grok Processor
+- nameは任意。ここではProtectにしています。
+- Log Samplesは以下を貼り付け
+  ```
+  4 12 11:29:51 192.168.100.26 CEF:0|Contrast Security|Contrast Agent Java|6.16.0|SECURITY|The parameter lastName had a value that successfully exploited sql-injection - D' OR '1%'\='1|WARN|pri=sql-injection src=0:zero:0:zero:0:zero:0:1 spt=8001 request=/owners requestMethod=GET app=PetClinic_8001 outcome=EXPLOITED
+  ```
+- parsing ruleは以下を貼り付け
+  ```
+  ContrastSecurityProtectLogRule %{data:data}pri=%{data:pri} src=%{ip:src} spt=%{number:spt} request=%{data:request} requestMethod=%{word:requestMethod} app=%{data:app} outcome=%{word:outcome}
+  ```
+  Log Samplesのところで MATCH とならない場合は、parsing ruleの末尾に改行を入れたり消したりでうまくいきます。
