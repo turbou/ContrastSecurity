@@ -91,3 +91,11 @@ Logs - Pipelines で以下のような感じで作成
 
 適当なログをクリックすると、構造化されているかが確認できます。
 ![Test Image 1](png/pipeline_check.jpeg)
+
+### ダッシュボードにパイチャートを作る
+![Test Image 1](png/dashboard_create.jpeg)
+ダッシュボード名は適当な名前を入れて作成します。
+![Test Image 1](png/dashboard.jpeg)
+ダッシュボードができたら、ウィジェットを追加します。
+![Test Image 1](png/add_widget.jpeg)
+
