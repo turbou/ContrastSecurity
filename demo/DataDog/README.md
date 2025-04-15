@@ -9,7 +9,8 @@
 - やられアプリ  
   WebGoat v2025.3  
   https://github.com/webgoat/webgoat/releases  
-  webgoat-2025.3.jar をダウンロード
+  webgoat-2025.3.jar をダウンロード  
+  **JDK23の環境が必要です。**
 
 - 攻撃テストアプリ  
   Nikto  
@@ -25,7 +26,7 @@ logs_enabled: true
 ```
 ```bash
 mkdir -p ~/.datadog-agent/conf.d/java.d
-vim conf.yaml
+vim ~/.datadog-agent/conf.d/java.d/conf.yaml
 ```
 ```yaml
 logs:
