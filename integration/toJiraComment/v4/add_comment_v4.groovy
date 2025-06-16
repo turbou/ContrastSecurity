@@ -20,6 +20,8 @@ import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 import groovy.transform.Field
 import java.util.stream.Collectors
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Command(
     name = 'AddCommentToJira',
@@ -81,7 +83,7 @@ def Response response = httpClient.newCall(request).execute()
 def jsonParser = new JsonSlurper()
 def resBody = response.body().string()
 def appsJson = jsonParser.parseText(resBody)
-if (response.code() != 200) {
+if (!response.isSuccessful()) {
     println "Failed to get the application list."
     println "${resBody}"
     System.exit(1)
@@ -116,7 +118,7 @@ request = requestBuilder.build()
 response = httpClient.newCall(request).execute()
 resBody = response.body().string()
 def resJson = jsonParser.parseText(resBody)
-if (response.code() != 200) {
+if (!response.isSuccessful()) {
     println "Failed to retrieve application vulnerabilities."
     println "${resBody}"
     System.exit(3)
@@ -148,7 +150,7 @@ while (traceIncompleteFlg) {
     response = httpClient.newCall(request).execute()
     resBody = response.body().string()
     resJson = jsonParser.parseText(resBody)
-    if (response.code() != 200) {
+    if (!response.isSuccessful()) {
         println "Failed to retrieve application vulnerabilities."
         println "${resBody}"
         System.exit(3)
@@ -249,7 +251,11 @@ allTraces.each { t ->
 }
 
 def outputJson = JsonOutput.toJson(outputJsonList)
-new File("output.json").write(JsonOutput.prettyPrint(outputJson))
+def now = LocalDateTime.now()
+def formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss")
+def formattedDate = now.format(formatter)
+def filename = "output_${formattedDate}.json"
+new File(filename).write(JsonOutput.prettyPrint(outputJson))
 
 baseDict.body.content[0].content = rowDictList
 def payload = JsonOutput.toJson(baseDict)
@@ -269,11 +275,12 @@ request = requestBuilder.build()
 response = httpClient.newCall(request).execute()
 resBody = response.body().string()
 resJson = jsonParser.parseText(resBody)
-if (response.code() != 200) {
+if (!response.isSuccessful()) {
     println "Failed to add a comment to Jira."
     println "${resBody}"
     System.exit(1)
 }
+println "Comment added to Jira ticket."
 
 System.exit(0)
 

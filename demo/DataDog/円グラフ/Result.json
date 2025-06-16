@@ -1,0 +1,58 @@
+{
+    "title": "結果",
+    "requests": [
+        {
+            "response_format": "scalar",
+            "queries": [
+                {
+                    "name": "query1",
+                    "data_source": "logs",
+                    "search": {
+                        "query": "host:YQ6VFDJY9V"
+                    },
+                    "indexes": [
+                        "*"
+                    ],
+                    "group_by": [
+                        {
+                            "facet": "@outcome",
+                            "limit": 100,
+                            "sort": {
+                                "aggregation": "count",
+                                "order": "desc",
+                                "metric": "@outcome"
+                            },
+                            "should_exclude_missing": true
+                        }
+                    ],
+                    "compute": {
+                        "aggregation": "count"
+                    },
+                    "storage": "hot"
+                }
+            ],
+            "style": {
+                "palette": "datadog16"
+            },
+            "formulas": [
+                {
+                    "formula": "query1"
+                }
+            ],
+            "sort": {
+                "count": 100,
+                "order_by": [
+                    {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                    }
+                ]
+            }
+        }
+    ],
+    "type": "sunburst",
+    "legend": {
+        "type": "automatic"
+    }
+}
