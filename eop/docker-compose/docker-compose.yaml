@@ -15,29 +15,39 @@ services:
 
   mysql:
     #image: mysql:8.0.21
+<<<<<<< HEAD
     image: arm64v8/mysql:8.4.4
+=======
+    image: arm64v8/mysql:8.0.32
+>>>>>>> origin/master
     container_name: contrast.mysql
     command: --log-bin-trust-function-creators=ON
     cap_add:
       - SYS_NICE  # CAP_SYS_NICE
     environment:
       - TZ=Asia/Tokyo
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - MYSQL_ROOT_PASSWORD=default1!
       - MYSQL_DATABASE=contrast
       - MYSQL_USER=contrast
-      - MYSQL_PASSWORD=default1!
+      - MYSQL_PASSWORD=password
     expose:
       - '3306'
     volumes:
       - mysql_data:/var/lib/mysql
 
   teamserver:
+<<<<<<< HEAD
     #image: ghcr.io/contrast-security-inc/contrast:latest
     image: ghcr.io/contrast-security-inc/contrast:3.12.2.14624369711@sha256:e9ecb599684ef57f00de55081fa2a0cb046d0524ec47b1137bfe404efe714739
     #image: ghcr.io/contrast-security-inc/contrast:3.12.3.15305333654@sha256:a843ee79db7738e3885f10b1aab8806547631fa9d5d1474492ada732ae2446ba
+=======
+    #image: ghcr.io/contrast-security-inc/contrast:3.12.0.13568004691
+    image: ghcr.io/contrast-security-inc/contrast:3.12.0.13568004691@sha256:a3fdceda50b3906a8cd8e78f3e51b1d7deae26299fc0ea6515abc513e76e273d
+    #image: ghcr.io/contrast-security-inc/contrast:3.9.11.3941630875@sha256:f5c38a1cd679fa71ea0af3ca2a960ea4a7261f4756e1c1cfe0240d7d3b9c25ad
+>>>>>>> origin/master
     container_name: contrast.teamserver
     depends_on:
-      - mail
+      #- mail
       - mysql
     expose:
       - '8080'
@@ -46,10 +56,10 @@ services:
     environment:
       - TZ=Asia/Tokyo
     # LICENCE Setup:
-      - CONTRAST_LICENSE=${CONTRAST_LICENSE}   #loaded via ENV
+      # - CONTRAST_LICENSE=${CONTRAST_LICENSE}   #loaded via ENV
       # Use Hub account to pull license
-      # - CONTRAST_HUB_USERNAME=<EMAIL>
-      # - CONTRAST_HUB_PASSWORD=<PASSWORD>
+      - CONTRAST_HUB_USERNAME=xxxxx.yyyyy@contrastsecurity.com
+      - CONTRAST_HUB_PASSWORD=XXXXXXXXXXXX
     # MySQL Setup: 
       # FOR REMOTE MySQL
       # - CONTRAST_JDBC_URL=jdbc:mysql://<DNS of MYSQL>:3306/contrast
@@ -62,7 +72,7 @@ services:
       # For a MySQL Container  --Uncomment 6 thru 15 and 20 & 21 along with the lines below.
       - CONTRAST_JDBC_URL=jdbc:mysql://mysql:3306/contrast
       - CONTRAST_JDBC_USER=contrast
-      - CONTRAST_JDBC_PASS=default1!
+      - CONTRAST_JDBC_PASS=password
     # SAML Setup
       # - CONTRAST_AUTHENTICATOR_SAML_KEYSTORE_PASSWORD=changeit
       # - CONTRAST_AUTHENTICATOR_SAML_KEYSTORE_PASSWORDMAP=some-alias=changeit
@@ -93,7 +103,8 @@ services:
       - mysql
 
   nginx:
-    image: nginx:1.13
+    #image: nginx:1.13
+    image: arm64v8/nginx:1.13
     container_name: contrast.nginx
     depends_on:
       - teamserver
