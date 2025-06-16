@@ -2,7 +2,8 @@ version: '3'
 
 services:
   mail:
-    image: mailhog/mailhog:v1.0.1
+    image: cd2team/mailhog:latest
+    #image: mailhog/mailhog:v1.0.1
     container_name: contrast.mail
     environment:
       - TZ=Asia/Tokyo
@@ -13,8 +14,8 @@ services:
       - maildir:/tmp
 
   mysql:
-    image: mysql:8.0.21
-    #image: arm64v8/mysql:8.0.32
+    #image: mysql:8.0.21
+    image: arm64v8/mysql:8.4.4
     container_name: contrast.mysql
     command: --log-bin-trust-function-creators=ON
     cap_add:
@@ -31,8 +32,9 @@ services:
       - mysql_data:/var/lib/mysql
 
   teamserver:
-    image: ghcr.io/contrast-security-inc/contrast:latest
-    #image: ghcr.io/contrast-security-inc/contrast:3.9.11.3941630875@sha256:f5c38a1cd679fa71ea0af3ca2a960ea4a7261f4756e1c1cfe0240d7d3b9c25ad
+    #image: ghcr.io/contrast-security-inc/contrast:latest
+    image: ghcr.io/contrast-security-inc/contrast:3.12.2.14624369711@sha256:e9ecb599684ef57f00de55081fa2a0cb046d0524ec47b1137bfe404efe714739
+    #image: ghcr.io/contrast-security-inc/contrast:3.12.3.15305333654@sha256:a843ee79db7738e3885f10b1aab8806547631fa9d5d1474492ada732ae2446ba
     container_name: contrast.teamserver
     depends_on:
       - mail
@@ -65,7 +67,7 @@ services:
       # - CONTRAST_AUTHENTICATOR_SAML_KEYSTORE_PASSWORD=changeit
       # - CONTRAST_AUTHENTICATOR_SAML_KEYSTORE_PASSWORDMAP=some-alias=changeit
     volumes:
-      - ./contrast_conf:/opt/contrast/conf
+      #- ./contrast_conf:/opt/contrast/conf
       - contrast_data:/opt/contrast/data
     deploy: 
       resources:
@@ -75,6 +77,20 @@ services:
         reservations:
           cpus: "1.0"
           memory: 4g
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2.2
+    container_name: contrast.phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      MYSQL_ROOT_PASSWORD: default1!
+      MYSQL_DATABASE: contrast
+      MYSQL_USER: contrast
+      MYSQL_PASSWORD: default1!
+    depends_on:
+      - mysql
 
   nginx:
     image: nginx:1.13
