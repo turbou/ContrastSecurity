@@ -88,7 +88,7 @@ services:
       MYSQL_ROOT_PASSWORD: default1!
       MYSQL_DATABASE: contrast
       MYSQL_USER: contrast
-      MYSQL_PASSWORD: default1!
+      MYSQL_PASSWORD: password
     depends_on:
       - mysql
 
