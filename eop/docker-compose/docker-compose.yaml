@@ -17,7 +17,7 @@ services:
     #image: mysql:8.0.21
     image: arm64v8/mysql:8.4.4
     container_name: contrast.mysql
-    command: --log-bin-trust-function-creators=ON
+    command: --local-infile=1 --log-bin-trust-function-creators=ON --innodb-buffer-pool-size=4G
     cap_add:
       - SYS_NICE  # CAP_SYS_NICE
     environment:
@@ -46,10 +46,10 @@ services:
     environment:
       - TZ=Asia/Tokyo
     # LICENCE Setup:
-      # - CONTRAST_LICENSE=${CONTRAST_LICENSE}   #loaded via ENV
+      - CONTRAST_LICENSE=${CONTRAST_LICENSE}   #loaded via ENV
       # Use Hub account to pull license
-      - CONTRAST_HUB_USERNAME=xxxxx.yyyyy@contrastsecurity.com
-      - CONTRAST_HUB_PASSWORD=XXXXXXXXXXXX
+      #- CONTRAST_HUB_USERNAME=xxxxx.yyyyy@contrastsecurity.com
+      #- CONTRAST_HUB_PASSWORD=XXXXXXXXXXXX
     # MySQL Setup: 
       # FOR REMOTE MySQL
       # - CONTRAST_JDBC_URL=jdbc:mysql://<DNS of MYSQL>:3306/contrast
