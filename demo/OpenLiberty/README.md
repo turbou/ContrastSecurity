@@ -9,13 +9,14 @@
 ### OpenLibertyのzipを取得
 [openliberty-24.0.0.12.zip](https://public.dhe.ibm.com/ibmdl/export/pub/software/openliberty/runtime/release/24.0.0.12/openliberty-24.0.0.12.zip) をダウンロード。
 
-(参考) [Supported technologies for Java (Kotlin, Scala) agent](https://docs.contrastsecurity.com/en/java-supported-technologies.html)
+対応バージョンについては以下、ご確認ください。  
+ [Supported technologies for Java (Kotlin, Scala) agent](https://docs.contrastsecurity.com/en/java-supported-technologies.html)
 
 ### インストール（解凍と配置）
 ```bash
 unzip penliberty-24.0.0.12.zip
 # 解凍ディレクトリはwlpになる。
-mkdir ~/servers
+mkdir -p ~/servers
 mv wlp ~/servers/
 ```
 
@@ -24,8 +25,15 @@ mv wlp ~/servers/
 cd ~/servers/wlp/bin
 ./server create demo
 ./server start demo
+# 停止は
+./server stop demo
 ```
 http://localhost:9080/
+
+ログの確認は
+```bash
+tail -f ~/servers/wlp/usr/servers/demo/logs/console.log
+```
 
 ### 管理コンソールを有効化（任意）
 `vim ~/servers/wlp/usr/servers/demo/server.xml`
@@ -51,16 +59,28 @@ https://localhost:9443/adminCenter
 
 ## Contrastエージェントのセットアップ
 ### contrast.jarのダウンロード
-今回はJavaエージェントのダウンロードはcurlでやります。  
+今回はJavaエージェントのダウンロードはcurlで取得する方法でやります。    
 詳細はチームサーバの「新規登録」のウイザードから実施してください。  
+今回はOpenLibertyなので、**Javaエージェント**を使用します。  
+
+ウイザードのステップとしては
+1. 言語：**Java**
+2. オペレーティングシステム：**MacOS（Linuxでも可）**
+3. アプリケーションのデプロイ方法：**手動でインストール**
+4. エージェントのインストール方法：**直接ダウンロード**
 
 `contrast.jar`は以下の場所に取得したとします。
 `~/servers/wlp/usr/servers/demo`の直下
 
 ### contrast_security.yamlのダウンロード
 こちらも「新規登録」のウイザードを参考に取得してください。  
+**エージェントを設定**の項目で**設定をダウンロード**を参考にyamlをダウンロードしてください。  
+*※ ウイザードは`/etc/contrast`に配置するようになっていますが、配置場所はどこでも構いません。適宜、ダウンロード場所を修正してcurlコマンドなどで取得してください。*  
+
 `contrast_security.yaml`はエージェントと同じく以下の場所に取得したとします。
-`~/servers/wlp/usr/servers/demo`の直下
+`~/servers/wlp/usr/servers/demo`の直下とします。　　
+
+ちなみにこのyamlファイルには、エージェントがチームサーバと通信するための最低限の設定（認証情報）が設定済みとなっています。  
 
 ### demoサーバへのContrastエージェントの組み込み
 `~/servers/wlp/usr/servers/demo`下に`jvm.options`を作成します。  
