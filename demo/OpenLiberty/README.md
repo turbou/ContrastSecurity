@@ -14,7 +14,7 @@
 
 ### インストール（解凍と配置）
 ```bash
-unzip penliberty-24.0.0.12.zip
+unzip openliberty-24.0.0.12.zip
 # 解凍ディレクトリはwlpになる。
 mkdir -p ~/servers
 mv wlp ~/servers/
@@ -83,6 +83,9 @@ https://localhost:9443/adminCenter
 ちなみにこのyamlファイルには、エージェントがチームサーバと通信するための最低限の設定（認証情報）が設定済みとなっています。  
 
 ### demoサーバへのContrastエージェントの組み込み
+[Websphereへのエージェント組み込みについてのドキュメント](https://docs.contrastsecurity.jp/ja/websphere.html)  
+OpenLibertyでは上記のやり方ではなく、以下のjvm.optionsの設定でエージェントを組み込みます。  
+
 `~/servers/wlp/usr/servers/demo`下に`jvm.options`を作成します。  
 内容は以下のとおりです。  
 ```
