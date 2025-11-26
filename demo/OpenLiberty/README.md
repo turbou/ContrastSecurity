@@ -3,18 +3,18 @@
 ## デモ実行環境
 - MacOS Tahoe 26.1
 - JDK17 (mavenも)
-- OpenLiberty 24.0.0.12
+- OpenLiberty 25.0.0.11
 
 ## OpenLibertyのインストール
 ### OpenLibertyのzipを取得
-[openliberty-24.0.0.12.zip](https://public.dhe.ibm.com/ibmdl/export/pub/software/openliberty/runtime/release/24.0.0.12/openliberty-24.0.0.12.zip) をダウンロード。
+[openliberty-25.0.0.11.zip](https://public.dhe.ibm.com/ibmdl/export/pub/software/openliberty/runtime/release/25.0.0.11/openliberty-25.0.0.11.zip) をダウンロード。
 
 対応バージョンについては以下、ご確認ください。  
  [Supported technologies for Java (Kotlin, Scala) agent](https://docs.contrastsecurity.com/en/java-supported-technologies.html)
 
 ### インストール（解凍と配置）
 ```bash
-unzip openliberty-24.0.0.12.zip
+unzip openliberty-25.0.0.11.zip
 # 解凍ディレクトリはwlpになる。
 mkdir -p ~/servers
 mv wlp ~/servers/
