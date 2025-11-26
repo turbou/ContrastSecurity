@@ -106,7 +106,7 @@ cd ~/servers/wlp/bin
 - サーバ一覧  
   `Mac_OpenLiberty_Demo`
 - アプリケーション一覧  
-  `ibm/api`と`The Liberty `で始まるアプリケーションが３つ
+  `ibm/api`と`The Liberty `で始まるアプリケーションが３つと`IBMJMXConnectorREST`
 
 ## やられアプリのPetClinicをオンボードさせる
 ### PetClinicをgit clone
